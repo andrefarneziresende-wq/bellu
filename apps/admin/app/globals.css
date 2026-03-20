@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  /* Beauty Marketplace Brand Colors */
+  --color-brand-rose: #C4918E;
+  --color-brand-rose-light: #D4A5A2;
+  --color-brand-rose-dark: #A87673;
+  --color-brand-cream: #FAF7F5;
+  --color-brand-gold: #D4A574;
+  --color-brand-gold-light: #E0BA8E;
+  --color-brand-text: #3D2C29;
+  --color-brand-text-secondary: #8C7E7A;
+  --color-brand-success: #7D9B76;
+  --color-brand-error: #C75B5B;
+  --color-brand-dark: #1A1412;
+
+  /* shadcn-compatible tokens */
+  --color-background: #FFFFFF;
+  --color-foreground: #3D2C29;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #3D2C29;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #3D2C29;
+  --color-primary: #C4918E;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #FAF7F5;
+  --color-secondary-foreground: #3D2C29;
+  --color-muted: #F5F0ED;
+  --color-muted-foreground: #8C7E7A;
+  --color-accent: #D4A574;
+  --color-accent-foreground: #FFFFFF;
+  --color-destructive: #C75B5B;
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: #E8E0DC;
+  --color-input: #E8E0DC;
+  --color-ring: #C4918E;
+
+  --color-sidebar: #FAF7F5;
+  --color-sidebar-foreground: #3D2C29;
+  --color-sidebar-accent: #C4918E;
+  --color-sidebar-accent-foreground: #FFFFFF;
+  --color-sidebar-border: #E8E0DC;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+  }
+}

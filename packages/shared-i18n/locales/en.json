@@ -1,0 +1,260 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "save": "Save",
+    "cancel": "Cancel",
+    "search": "Search",
+    "seeAll": "See all",
+    "back": "Back",
+    "continue": "Continue",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or",
+    "noResults": "No results found",
+    "tryAgain": "Try again",
+    "required": "Required field"
+  },
+  "auth": {
+    "login": "Log in",
+    "signup": "Create account",
+    "loginTitle": "Welcome back",
+    "loginSubtitle": "Log in to book your beauty services",
+    "signupTitle": "Create your account",
+    "signupSubtitle": "Start discovering the best professionals",
+    "emailPlaceholder": "Your email",
+    "phonePlaceholder": "Your phone",
+    "passwordPlaceholder": "Your password",
+    "namePlaceholder": "Your name",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithApple": "Continue with Apple",
+    "orContinueWith": "or continue with",
+    "termsAgreement": "By continuing, you agree to our Terms of Use and Privacy Policy"
+  },
+  "home": {
+    "greeting": "Hi, {{name}}",
+    "greetingDefault": "Hi!",
+    "nearYou": "Near you",
+    "popular": "Most popular",
+    "categories": "Categories",
+    "featured": "Featured",
+    "topRated": "Top rated",
+    "recentlyViewed": "Recently viewed",
+    "seeAll": "See all"
+  },
+  "booking": {
+    "scheduleButton": "Book appointment",
+    "selectDate": "Choose the date",
+    "selectTime": "Choose the time",
+    "selectService": "Choose a service",
+    "confirmBooking": "Confirm booking",
+    "bookingConfirmed": "Booking confirmed!",
+    "bookingConfirmedMessage": "You'll receive a confirmation notification",
+    "price": "Price",
+    "duration": "Duration",
+    "minutes": "{{count}} min",
+    "total": "Total",
+    "date": "Date",
+    "time": "Time",
+    "status": "Status",
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "noShow": "No show",
+    "cancelBooking": "Cancel booking",
+    "cancelConfirmTitle": "Cancel booking?",
+    "cancelConfirmMessage": "Are you sure you want to cancel this booking?",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "noBookings": "No bookings",
+    "noBookingsMessage": "You haven't made any bookings yet"
+  },
+  "payment": {
+    "title": "Payment",
+    "selectMethod": "Choose payment method",
+    "pix": "Pix",
+    "card": "Credit/debit card",
+    "boleto": "Bank slip",
+    "sepa": "SEPA direct debit",
+    "bizum": "Bizum",
+    "applePay": "Apple Pay",
+    "googlePay": "Google Pay",
+    "processing": "Processing payment...",
+    "success": "Payment confirmed!",
+    "failed": "Payment failed",
+    "refunded": "Refunded",
+    "pay": "Pay {{amount}}",
+    "secure": "Secure and encrypted payment"
+  },
+  "professional": {
+    "portfolio": "Portfolio",
+    "services": "Services",
+    "reviews": "Reviews",
+    "about": "About",
+    "openNow": "Open now",
+    "closedNow": "Closed",
+    "verified": "Verified",
+    "location": "Location",
+    "workingHours": "Working hours",
+    "fromPrice": "From {{price}}",
+    "reviewCount": "{{count}} reviews",
+    "noReviews": "No reviews yet",
+    "distance": "{{distance}} away"
+  },
+  "review": {
+    "leaveReview": "Leave a review",
+    "ratingLabel": "How was your experience?",
+    "commentPlaceholder": "Tell us about it...",
+    "addPhoto": "Add a photo of the result",
+    "submit": "Submit review",
+    "thankYou": "Thanks for your review!",
+    "thankYouMessage": "Your feedback helps other clients find the best professionals"
+  },
+  "profile": {
+    "myBookings": "My bookings",
+    "favorites": "Favorites",
+    "settings": "Settings",
+    "language": "Language",
+    "country": "Country",
+    "logout": "Log out",
+    "editProfile": "Edit profile",
+    "paymentMethods": "Payment methods",
+    "notifications": "Notifications",
+    "helpSupport": "Help & support",
+    "termsOfUse": "Terms of use",
+    "privacyPolicy": "Privacy policy",
+    "deleteAccount": "Delete account",
+    "version": "Version {{version}}"
+  },
+  "tabs": {
+    "home": "Home",
+    "search": "Search",
+    "bookings": "Bookings",
+    "favorites": "Favorites",
+    "profile": "Profile"
+  },
+  "search": {
+    "placeholder": "Search services or professionals...",
+    "filters": "Filters",
+    "sortBy": "Sort by",
+    "distance": "Distance",
+    "rating": "Rating",
+    "priceLowHigh": "Lowest price",
+    "priceHighLow": "Highest price",
+    "priceRange": "Price range",
+    "category": "Category",
+    "applyFilters": "Apply filters",
+    "clearFilters": "Clear filters",
+    "results": "{{count}} results"
+  },
+  "favorites": {
+    "title": "Favorites",
+    "empty": "No favorites yet",
+    "emptyMessage": "Save your favorite professionals to find them faster",
+    "removed": "Removed from favorites",
+    "added": "Added to favorites"
+  },
+  "chat": {
+    "placeholder": "Type your message...",
+    "send": "Send",
+    "noMessages": "No messages yet"
+  },
+  "notifications": {
+    "newBooking": "New booking",
+    "bookingConfirmed": "Booking confirmed",
+    "bookingCancelled": "Booking cancelled",
+    "reminder24h": "Reminder: your appointment is tomorrow",
+    "reminder1h": "Reminder: your appointment is in 1 hour",
+    "newReview": "New review received",
+    "newMessage": "New message"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "No internet connection",
+    "unauthorized": "Session expired. Please log in again.",
+    "notFound": "Not found",
+    "invalidCredentials": "Incorrect email or password",
+    "emailInUse": "This email is already in use",
+    "phoneInUse": "This phone is already in use",
+    "slotUnavailable": "This time slot is no longer available",
+    "bookingCancelLimit": "Cannot cancel less than 2 hours before the appointment"
+  },
+  "pro": {
+    "dashboard": {
+      "title": "Dashboard",
+      "todayBookings": "Today's bookings",
+      "weekRevenue": "This week's revenue",
+      "monthRevenue": "This month's revenue",
+      "totalClients": "Total clients",
+      "noShowRate": "No-show rate",
+      "occupancyRate": "Occupancy rate"
+    },
+    "agenda": {
+      "title": "Schedule",
+      "noBookings": "No bookings for this day",
+      "blockTime": "Block time",
+      "unblockTime": "Unblock time"
+    },
+    "portfolio": {
+      "title": "Portfolio",
+      "addItem": "Add work",
+      "beforePhoto": "Before photo",
+      "afterPhoto": "After photo",
+      "empty": "Your portfolio is empty",
+      "emptyMessage": "Add photos of your work to attract more clients"
+    },
+    "finances": {
+      "title": "Finances",
+      "balance": "Available balance",
+      "withdraw": "Withdraw",
+      "transactions": "Transactions",
+      "commission": "Platform commission",
+      "netAmount": "Net amount"
+    },
+    "services": {
+      "title": "My services",
+      "addService": "Add service",
+      "editService": "Edit service",
+      "noServices": "No services registered"
+    },
+    "tabs": {
+      "dashboard": "Home",
+      "agenda": "Schedule",
+      "portfolio": "Portfolio",
+      "finances": "Finances",
+      "profile": "Profile"
+    }
+  },
+  "admin": {
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "professionals": "Professionals",
+      "customers": "Customers",
+      "bookings": "Bookings",
+      "finances": "Finances",
+      "reviews": "Reviews",
+      "categories": "Categories",
+      "promotions": "Promotions",
+      "settings": "Settings"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "gmv": "GMV",
+      "totalBookings": "Total bookings",
+      "newUsers": "New users",
+      "newProfessionals": "New professionals",
+      "cancelRate": "Cancellation rate",
+      "last7days": "Last 7 days",
+      "last30days": "Last 30 days",
+      "allTime": "All time"
+    }
+  }
+}

@@ -1,0 +1,260 @@
+{
+  "common": {
+    "loading": "Carregando...",
+    "error": "Algo deu errado",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "search": "Buscar",
+    "seeAll": "Ver todos",
+    "back": "Voltar",
+    "continue": "Continuar",
+    "confirm": "Confirmar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "close": "Fechar",
+    "yes": "Sim",
+    "no": "Não",
+    "or": "ou",
+    "noResults": "Nenhum resultado encontrado",
+    "tryAgain": "Tentar novamente",
+    "required": "Campo obrigatório"
+  },
+  "auth": {
+    "login": "Entrar",
+    "signup": "Criar conta",
+    "loginTitle": "Bem-vinda de volta",
+    "loginSubtitle": "Entre para agendar seus serviços de beleza",
+    "signupTitle": "Crie sua conta",
+    "signupSubtitle": "Comece a descobrir os melhores profissionais",
+    "emailPlaceholder": "Seu e-mail",
+    "phonePlaceholder": "Seu telefone",
+    "passwordPlaceholder": "Sua senha",
+    "namePlaceholder": "Seu nome",
+    "forgotPassword": "Esqueceu a senha?",
+    "noAccount": "Não tem conta?",
+    "hasAccount": "Já tem conta?",
+    "continueWithGoogle": "Continuar com Google",
+    "continueWithApple": "Continuar com Apple",
+    "orContinueWith": "ou continue com",
+    "termsAgreement": "Ao continuar, você aceita nossos Termos de Uso e Política de Privacidade"
+  },
+  "home": {
+    "greeting": "Olá, {{name}}",
+    "greetingDefault": "Olá!",
+    "nearYou": "Perto de você",
+    "popular": "Mais populares",
+    "categories": "Categorias",
+    "featured": "Em destaque",
+    "topRated": "Melhor avaliados",
+    "recentlyViewed": "Vistos recentemente",
+    "seeAll": "Ver todos"
+  },
+  "booking": {
+    "scheduleButton": "Agendar horário",
+    "selectDate": "Escolha a data",
+    "selectTime": "Escolha o horário",
+    "selectService": "Escolha o serviço",
+    "confirmBooking": "Confirmar agendamento",
+    "bookingConfirmed": "Agendamento confirmado!",
+    "bookingConfirmedMessage": "Você receberá uma confirmação por notificação",
+    "price": "Valor",
+    "duration": "Duração",
+    "minutes": "{{count}} min",
+    "total": "Total",
+    "date": "Data",
+    "time": "Horário",
+    "status": "Status",
+    "pending": "Pendente",
+    "confirmed": "Confirmado",
+    "completed": "Concluído",
+    "cancelled": "Cancelado",
+    "noShow": "Não compareceu",
+    "cancelBooking": "Cancelar agendamento",
+    "cancelConfirmTitle": "Cancelar agendamento?",
+    "cancelConfirmMessage": "Tem certeza que deseja cancelar este agendamento?",
+    "upcoming": "Próximos",
+    "past": "Anteriores",
+    "noBookings": "Nenhum agendamento",
+    "noBookingsMessage": "Você ainda não fez nenhum agendamento"
+  },
+  "payment": {
+    "title": "Pagamento",
+    "selectMethod": "Escolha a forma de pagamento",
+    "pix": "Pix",
+    "card": "Cartão de crédito/débito",
+    "boleto": "Boleto bancário",
+    "sepa": "Débito SEPA",
+    "bizum": "Bizum",
+    "applePay": "Apple Pay",
+    "googlePay": "Google Pay",
+    "processing": "Processando pagamento...",
+    "success": "Pagamento confirmado!",
+    "failed": "Pagamento falhou",
+    "refunded": "Reembolsado",
+    "pay": "Pagar {{amount}}",
+    "secure": "Pagamento seguro e criptografado"
+  },
+  "professional": {
+    "portfolio": "Portfólio",
+    "services": "Serviços",
+    "reviews": "Avaliações",
+    "about": "Sobre",
+    "openNow": "Aberto agora",
+    "closedNow": "Fechado",
+    "verified": "Verificado",
+    "location": "Localização",
+    "workingHours": "Horário de funcionamento",
+    "fromPrice": "A partir de {{price}}",
+    "reviewCount": "{{count}} avaliações",
+    "noReviews": "Sem avaliações ainda",
+    "distance": "{{distance}} de você"
+  },
+  "review": {
+    "leaveReview": "Avaliar atendimento",
+    "ratingLabel": "Como foi sua experiência?",
+    "commentPlaceholder": "Conte como foi...",
+    "addPhoto": "Adicionar foto do resultado",
+    "submit": "Enviar avaliação",
+    "thankYou": "Obrigada pela avaliação!",
+    "thankYouMessage": "Sua opinião ajuda outros clientes a encontrar os melhores profissionais"
+  },
+  "profile": {
+    "myBookings": "Meus agendamentos",
+    "favorites": "Favoritos",
+    "settings": "Configurações",
+    "language": "Idioma",
+    "country": "País",
+    "logout": "Sair",
+    "editProfile": "Editar perfil",
+    "paymentMethods": "Métodos de pagamento",
+    "notifications": "Notificações",
+    "helpSupport": "Ajuda e suporte",
+    "termsOfUse": "Termos de uso",
+    "privacyPolicy": "Política de privacidade",
+    "deleteAccount": "Excluir conta",
+    "version": "Versão {{version}}"
+  },
+  "tabs": {
+    "home": "Início",
+    "search": "Buscar",
+    "bookings": "Agenda",
+    "favorites": "Favoritos",
+    "profile": "Perfil"
+  },
+  "search": {
+    "placeholder": "Buscar serviços ou profissionais...",
+    "filters": "Filtros",
+    "sortBy": "Ordenar por",
+    "distance": "Distância",
+    "rating": "Avaliação",
+    "priceLowHigh": "Menor preço",
+    "priceHighLow": "Maior preço",
+    "priceRange": "Faixa de preço",
+    "category": "Categoria",
+    "applyFilters": "Aplicar filtros",
+    "clearFilters": "Limpar filtros",
+    "results": "{{count}} resultados"
+  },
+  "favorites": {
+    "title": "Favoritos",
+    "empty": "Nenhum favorito ainda",
+    "emptyMessage": "Salve seus profissionais favoritos para encontrá-los mais rápido",
+    "removed": "Removido dos favoritos",
+    "added": "Adicionado aos favoritos"
+  },
+  "chat": {
+    "placeholder": "Digite sua mensagem...",
+    "send": "Enviar",
+    "noMessages": "Nenhuma mensagem ainda"
+  },
+  "notifications": {
+    "newBooking": "Novo agendamento",
+    "bookingConfirmed": "Agendamento confirmado",
+    "bookingCancelled": "Agendamento cancelado",
+    "reminder24h": "Lembrete: seu agendamento é amanhã",
+    "reminder1h": "Lembrete: seu agendamento é em 1 hora",
+    "newReview": "Nova avaliação recebida",
+    "newMessage": "Nova mensagem"
+  },
+  "errors": {
+    "generic": "Algo deu errado. Tente novamente.",
+    "network": "Sem conexão com a internet",
+    "unauthorized": "Sessão expirada. Faça login novamente.",
+    "notFound": "Não encontrado",
+    "invalidCredentials": "Email ou senha incorretos",
+    "emailInUse": "Este email já está em uso",
+    "phoneInUse": "Este telefone já está em uso",
+    "slotUnavailable": "Este horário não está mais disponível",
+    "bookingCancelLimit": "Não é possível cancelar com menos de 2 horas de antecedência"
+  },
+  "pro": {
+    "dashboard": {
+      "title": "Dashboard",
+      "todayBookings": "Agendamentos hoje",
+      "weekRevenue": "Receita da semana",
+      "monthRevenue": "Receita do mês",
+      "totalClients": "Total de clientes",
+      "noShowRate": "Taxa de faltas",
+      "occupancyRate": "Taxa de ocupação"
+    },
+    "agenda": {
+      "title": "Agenda",
+      "noBookings": "Sem agendamentos para este dia",
+      "blockTime": "Bloquear horário",
+      "unblockTime": "Desbloquear horário"
+    },
+    "portfolio": {
+      "title": "Portfólio",
+      "addItem": "Adicionar trabalho",
+      "beforePhoto": "Foto antes",
+      "afterPhoto": "Foto depois",
+      "empty": "Seu portfólio está vazio",
+      "emptyMessage": "Adicione fotos dos seus trabalhos para atrair mais clientes"
+    },
+    "finances": {
+      "title": "Financeiro",
+      "balance": "Saldo disponível",
+      "withdraw": "Sacar",
+      "transactions": "Transações",
+      "commission": "Comissão da plataforma",
+      "netAmount": "Valor líquido"
+    },
+    "services": {
+      "title": "Meus serviços",
+      "addService": "Adicionar serviço",
+      "editService": "Editar serviço",
+      "noServices": "Nenhum serviço cadastrado"
+    },
+    "tabs": {
+      "dashboard": "Início",
+      "agenda": "Agenda",
+      "portfolio": "Portfólio",
+      "finances": "Financeiro",
+      "profile": "Perfil"
+    }
+  },
+  "admin": {
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "professionals": "Profissionais",
+      "customers": "Clientes",
+      "bookings": "Agendamentos",
+      "finances": "Financeiro",
+      "reviews": "Avaliações",
+      "categories": "Categorias",
+      "promotions": "Promoções",
+      "settings": "Configurações"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "gmv": "GMV",
+      "totalBookings": "Total de agendamentos",
+      "newUsers": "Novos usuários",
+      "newProfessionals": "Novos profissionais",
+      "cancelRate": "Taxa de cancelamento",
+      "last7days": "Últimos 7 dias",
+      "last30days": "Últimos 30 dias",
+      "allTime": "Todo período"
+    }
+  }
+}

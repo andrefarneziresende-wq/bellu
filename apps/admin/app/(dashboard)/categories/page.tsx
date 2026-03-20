@@ -1,0 +1,570 @@
+'use client';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Plus, Pencil, Trash2, GripVertical, Loader2, Grid3X3 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { apiFetch } from '@/lib/api';
+import { useToast } from '@/components/ui/toast';
+
+interface CategoryTranslation {
+  locale: string;
+  name: string;
+}
+
+interface Category {
+  id: string;
+  slug: string;
+  icon: string | null;
+  order: number;
+  translations: CategoryTranslation[];
+}
+
+interface CategoryFormData {
+  slug: string;
+  icon: string;
+  order: number;
+  namePtBR: string;
+  nameEsES: string;
+}
+
+const emptyForm: CategoryFormData = {
+  slug: '',
+  icon: '',
+  order: 0,
+  namePtBR: '',
+  nameEsES: '',
+};
+
+const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export default function CategoriesPage() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Form dialog state
+  const [formOpen, setFormOpen] = useState(false);
+  const [formData, setFormData] = useState<CategoryFormData>(emptyForm);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Delete dialog state
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Drag & drop state
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [reordering, setReordering] = useState(false);
+  const dragNodeRef = useRef<HTMLTableRowElement | null>(null);
+
+  const toast = useToast();
+
+  const fetchCategories = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiFetch<{ data: Category[] }>('/api/categories');
+      setCategories(res.data);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  const getTranslation = (cat: Category, locale: string) => {
+    const t = cat.translations?.find(
+      (tr) => tr.locale === locale || tr.locale.startsWith(locale)
+    );
+    return t?.name ?? '—';
+  };
+
+  // ---- Drag & Drop handlers ----
+
+  const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
+    setDragIndex(index);
+    dragNodeRef.current = e.currentTarget;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+    // Apply grabbing cursor via a slight delay so the drag image captures first
+    requestAnimationFrame(() => {
+      if (dragNodeRef.current) {
+        dragNodeRef.current.style.opacity = '0.4';
+      }
+    });
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragIndex === null || index === dragIndex) {
+      if (index === dragIndex) setDragOverIndex(null);
+      return;
+    }
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLTableRowElement>) => {
+    // Only clear if we actually left the row (not entering a child)
+    const relatedTarget = e.relatedTarget as Node | null;
+    if (!e.currentTarget.contains(relatedTarget)) {
+      setDragOverIndex(null);
+    }
+  };
+
+  const handleDragEnd = () => {
+    if (dragNodeRef.current) {
+      dragNodeRef.current.style.opacity = '1';
+    }
+    setDragIndex(null);
+    setDragOverIndex(null);
+    dragNodeRef.current = null;
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLTableRowElement>, dropIndex: number) => {
+    e.preventDefault();
+    handleDragEnd();
+
+    if (dragIndex === null || dragIndex === dropIndex) return;
+
+    // Reorder the array
+    const updated = [...categories];
+    const [moved] = updated.splice(dragIndex, 1);
+    updated.splice(dropIndex, 0, moved);
+
+    // Optimistically update UI
+    setCategories(updated);
+
+    // Persist new order to API
+    setReordering(true);
+    try {
+      const promises = updated.map((cat, idx) => {
+        if (cat.order !== idx) {
+          return apiFetch(`/api/admin/categories/${cat.id}/reorder`, {
+            method: 'PATCH',
+            body: JSON.stringify({ order: idx }),
+          });
+        }
+        return Promise.resolve();
+      });
+      await Promise.all(promises);
+      toast.success('Ordem atualizada');
+      await fetchCategories();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao reordenar categorias');
+      // Rollback on failure
+      await fetchCategories();
+    } finally {
+      setReordering(false);
+    }
+  };
+
+  // ---- Validation ----
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.slug.trim()) {
+      errors.slug = 'Slug é obrigatório';
+    } else if (!SLUG_REGEX.test(formData.slug)) {
+      errors.slug = 'Slug deve conter apenas letras minúsculas, números e hífens';
+    }
+
+    if (!formData.icon.trim()) {
+      errors.icon = 'Ícone é obrigatório';
+    }
+
+    if (!formData.namePtBR.trim()) {
+      errors.namePtBR = 'Nome em português é obrigatório';
+    }
+
+    if (!formData.nameEsES.trim()) {
+      errors.nameEsES = 'Nome em espanhol é obrigatório';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const clearFieldError = (field: string) => {
+    setFormErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  // ---- Create / Edit handlers ----
+
+  const openCreateDialog = () => {
+    setEditingId(null);
+    setFormData(emptyForm);
+    setFormErrors({});
+    setFormOpen(true);
+  };
+
+  const openEditDialog = (cat: Category) => {
+    setEditingId(cat.id);
+    setFormData({
+      slug: cat.slug,
+      icon: cat.icon ?? '',
+      order: cat.order,
+      namePtBR: getTranslation(cat, 'pt'),
+      nameEsES: getTranslation(cat, 'es'),
+    });
+    setFormErrors({});
+    setFormOpen(true);
+  };
+
+  const handleFormSubmit = async () => {
+    if (!validateForm()) return;
+
+    setSubmitting(true);
+    try {
+      const body = {
+        slug: formData.slug,
+        icon: formData.icon,
+        order: formData.order,
+        translations: [
+          { locale: 'pt-BR', name: formData.namePtBR },
+          { locale: 'es-ES', name: formData.nameEsES },
+        ],
+      };
+
+      if (editingId) {
+        await apiFetch(`/api/admin/categories/${editingId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        });
+        toast.success('Categoria atualizada com sucesso');
+      } else {
+        await apiFetch('/api/admin/categories', {
+          method: 'POST',
+          body: JSON.stringify(body),
+        });
+        toast.success('Categoria criada com sucesso');
+      }
+
+      setFormOpen(false);
+      await fetchCategories();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao salvar categoria');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ---- Delete handlers ----
+
+  const openDeleteDialog = (cat: Category) => {
+    setDeletingCategory(cat);
+    setDeleteOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingCategory) return;
+    setDeleting(true);
+    try {
+      await apiFetch(`/api/admin/categories/${deletingCategory.id}`, {
+        method: 'DELETE',
+      });
+      setDeleteOpen(false);
+      setDeletingCategory(null);
+      toast.success('Categoria excluída com sucesso');
+      await fetchCategories();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao excluir categoria');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-serif text-2xl font-bold">Categorias</h1>
+          <p className="text-sm text-muted-foreground">
+            Gerencie as categorias de serviços da plataforma
+          </p>
+        </div>
+        <Button onClick={openCreateDialog}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nova categoria
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Categorias ({categories.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : error ? (
+            <div className="py-10 text-center text-sm text-brand-error">
+              Erro ao carregar categorias: {error}
+            </div>
+          ) : categories.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10">
+              <Grid3X3 className="h-12 w-12 text-muted-foreground" />
+              <p className="mt-4 text-sm text-muted-foreground">
+                Nenhuma categoria cadastrada
+              </p>
+              <Button className="mt-4" onClick={openCreateDialog}>
+                <Plus className="mr-2 h-4 w-4" />
+                Criar primeira categoria
+              </Button>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px]"></TableHead>
+                  <TableHead className="w-[50px]">Ícone</TableHead>
+                  <TableHead>Nome (pt-BR)</TableHead>
+                  <TableHead>Nome (es-ES)</TableHead>
+                  <TableHead>Slug</TableHead>
+                  <TableHead>Ordem</TableHead>
+                  <TableHead className="w-[100px]">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {categories.map((cat, index) => (
+                  <TableRow
+                    key={cat.id}
+                    draggable={!reordering}
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragLeave={handleDragLeave}
+                    onDragEnd={handleDragEnd}
+                    onDrop={(e) => handleDrop(e, index)}
+                    className={
+                      dragOverIndex === index && dragIndex !== index
+                        ? 'border-t-2 border-brand-rose'
+                        : ''
+                    }
+                    style={{
+                      opacity: dragIndex === index ? 0.4 : 1,
+                    }}
+                  >
+                    <TableCell>
+                      <GripVertical
+                        className={`h-4 w-4 text-muted-foreground ${
+                          dragIndex !== null ? 'cursor-grabbing' : 'cursor-grab'
+                        }`}
+                      />
+                    </TableCell>
+                    <TableCell className="text-xl">{cat.icon ?? '—'}</TableCell>
+                    <TableCell className="font-medium">
+                      {getTranslation(cat, 'pt')}
+                    </TableCell>
+                    <TableCell>{getTranslation(cat, 'es')}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{cat.slug}</Badge>
+                    </TableCell>
+                    <TableCell>{cat.order}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Editar"
+                          onClick={() => openEditDialog(cat)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Excluir"
+                          onClick={() => openDeleteDialog(cat)}
+                        >
+                          <Trash2 className="h-4 w-4 text-brand-error" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create / Edit Dialog */}
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingId ? 'Editar categoria' : 'Nova categoria'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="slug">Slug</Label>
+              <Input
+                id="slug"
+                value={formData.slug}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, slug: e.target.value }));
+                  clearFieldError('slug');
+                }}
+                placeholder="ex: beleza"
+                className={formErrors.slug ? 'border-brand-error' : ''}
+              />
+              {formErrors.slug && (
+                <p className="text-xs text-brand-error mt-1">{formErrors.slug}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="icon">Ícone (emoji)</Label>
+              <Input
+                id="icon"
+                value={formData.icon}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, icon: e.target.value }));
+                  clearFieldError('icon');
+                }}
+                placeholder="ex: ✂️"
+                className={formErrors.icon ? 'border-brand-error' : ''}
+              />
+              {formErrors.icon && (
+                <p className="text-xs text-brand-error mt-1">{formErrors.icon}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="order">Ordem</Label>
+              <Input
+                id="order"
+                type="number"
+                value={formData.order}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    order: parseInt(e.target.value, 10) || 0,
+                  }))
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="namePtBR">Nome (pt-BR)</Label>
+              <Input
+                id="namePtBR"
+                value={formData.namePtBR}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, namePtBR: e.target.value }));
+                  clearFieldError('namePtBR');
+                }}
+                placeholder="Nome em português"
+                className={formErrors.namePtBR ? 'border-brand-error' : ''}
+              />
+              {formErrors.namePtBR && (
+                <p className="text-xs text-brand-error mt-1">{formErrors.namePtBR}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nameEsES">Nome (es-ES)</Label>
+              <Input
+                id="nameEsES"
+                value={formData.nameEsES}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, nameEsES: e.target.value }));
+                  clearFieldError('nameEsES');
+                }}
+                placeholder="Nombre en español"
+                className={formErrors.nameEsES ? 'border-brand-error' : ''}
+              />
+              {formErrors.nameEsES && (
+                <p className="text-xs text-brand-error mt-1">{formErrors.nameEsES}</p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setFormOpen(false)}
+              disabled={submitting}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleFormSubmit} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingId ? 'Salvar' : 'Criar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir categoria</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Tem certeza que deseja excluir a categoria{' '}
+            <strong>
+              {deletingCategory
+                ? getTranslation(deletingCategory, 'pt')
+                : ''}
+            </strong>
+            ? Essa ação não pode ser desfeita.
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteOpen(false)}
+              disabled={deleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

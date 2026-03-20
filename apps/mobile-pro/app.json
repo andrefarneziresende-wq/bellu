@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "GlamPro",
+    "slug": "glam-pro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "glampro",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAF7F5"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.beauty.glampro"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FAF7F5"
+      },
+      "package": "com.beauty.glampro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
