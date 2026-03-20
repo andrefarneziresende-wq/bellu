@@ -1,6 +1,6 @@
-import ptBR from './locales/pt-BR.json';
-import esES from './locales/es-ES.json';
-import en from './locales/en.json';
+import ptBR from './locales/pt-BR.json' with { type: 'json' };
+import esES from './locales/es-ES.json' with { type: 'json' };
+import en from './locales/en.json' with { type: 'json' };
 
 export const resources = {
   'pt-BR': { translation: ptBR },

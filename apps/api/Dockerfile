@@ -19,16 +19,14 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build shared packages
-RUN npm run build --workspace=@beauty/shared-types || true
-RUN npm run build --workspace=@beauty/shared-validators || true
-RUN npm run build --workspace=@beauty/shared-utils || true
-RUN npm run build --workspace=@beauty/shared-i18n || true
+# Build shared packages first
+RUN cd packages/shared-types && npx tsc
+RUN cd packages/shared-validators && npx tsc
+RUN cd packages/shared-utils && npx tsc
+RUN cd packages/shared-i18n && npx tsc
 
 # Generate Prisma client & build API
-WORKDIR /app/apps/api
-RUN npx prisma generate
-RUN npx tsc
+RUN cd apps/api && npx prisma generate && npx tsc
 
 # ---- Runner ----
 FROM base AS runner
@@ -36,12 +34,27 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy only what's needed
-COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/apps/api/prisma ./prisma
-COPY --from=builder /app/apps/api/package.json ./
+# Copy built shared packages
+COPY --from=builder /app/packages/shared-types/dist ./packages/shared-types/dist
+COPY --from=builder /app/packages/shared-types/package.json ./packages/shared-types/
+COPY --from=builder /app/packages/shared-validators/dist ./packages/shared-validators/dist
+COPY --from=builder /app/packages/shared-validators/package.json ./packages/shared-validators/
+COPY --from=builder /app/packages/shared-utils/dist ./packages/shared-utils/dist
+COPY --from=builder /app/packages/shared-utils/package.json ./packages/shared-utils/
+COPY --from=builder /app/packages/shared-i18n/dist ./packages/shared-i18n/dist
+COPY --from=builder /app/packages/shared-i18n/locales ./packages/shared-i18n/locales
+COPY --from=builder /app/packages/shared-i18n/package.json ./packages/shared-i18n/
+
+# Copy API
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
+COPY --from=builder /app/apps/api/package.json ./apps/api/
+
+# Copy root package files and node_modules
+COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3333
 
+WORKDIR /app/apps/api
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
