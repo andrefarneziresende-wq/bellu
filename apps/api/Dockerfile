@@ -31,13 +31,26 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy the entire built workspace (keeps symlinks intact)
-COPY --from=builder /app/package.json ./
+# Copy node_modules (without workspace symlinks)
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages ./packages
+
+# Copy built shared packages
+COPY --from=builder /app/packages/shared-types ./packages/shared-types
+COPY --from=builder /app/packages/shared-validators ./packages/shared-validators
+COPY --from=builder /app/packages/shared-utils ./packages/shared-utils
+COPY --from=builder /app/packages/shared-i18n ./packages/shared-i18n
+
+# Copy API
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 COPY --from=builder /app/apps/api/package.json ./apps/api/
+COPY --from=builder /app/package.json ./
+
+# Recreate workspace symlinks manually
+RUN ln -sf /app/packages/shared-types /app/node_modules/@beauty/shared-types && \
+    ln -sf /app/packages/shared-validators /app/node_modules/@beauty/shared-validators && \
+    ln -sf /app/packages/shared-utils /app/node_modules/@beauty/shared-utils && \
+    ln -sf /app/packages/shared-i18n /app/node_modules/@beauty/shared-i18n
 
 EXPOSE 3333
 
