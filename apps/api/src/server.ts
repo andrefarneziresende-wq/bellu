@@ -33,7 +33,9 @@ async function bootstrap() {
     origin: env.CORS_ORIGIN.split(',').map((o) => o.trim()),
     credentials: true,
   });
-  await app.register(helmet);
+  await app.register(helmet, {
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  });
   await app.register(jwt, { secret: env.JWT_SECRET });
   await app.register(rateLimit, { max: 100, timeWindow: '1 minute' });
 
