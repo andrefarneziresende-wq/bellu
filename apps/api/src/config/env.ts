@@ -12,6 +12,13 @@ const envSchema = z.object({
   ALLOWED_ORIGINS: z.string().optional(),
   API_PUBLIC_URL: z.string().url().optional(),
 
+  // Cloudflare R2 (image storage)
+  R2_ACCESS_KEY_ID: z.string().default(''),
+  R2_SECRET_ACCESS_KEY: z.string().default(''),
+  R2_ENDPOINT: z.string().default(''),
+  R2_BUCKET_NAME: z.string().default('bellu-uploads'),
+  R2_PUBLIC_URL: z.string().default(''),
+
   // Payment gateways (optional in dev)
   STRIPE_SECRET_KEY: z.string().default('sk_test_placeholder'),
   STRIPE_WEBHOOK_SECRET: z.string().default('whsec_placeholder'),
