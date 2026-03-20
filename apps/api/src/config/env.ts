@@ -9,6 +9,7 @@ const envSchema = z.object({
   HOST: z.string().default('0.0.0.0'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
+  ALLOWED_ORIGINS: z.string().optional(),
   API_PUBLIC_URL: z.string().url().optional(),
 
   // Payment gateways (optional in dev)
