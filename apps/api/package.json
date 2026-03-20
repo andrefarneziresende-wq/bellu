@@ -6,9 +6,8 @@
   "scripts": {
     "dev": "tsx watch --env-file=.env src/server.ts",
     "build": "prisma generate && tsc",
-    "start": "node dist/server.js",
-    "start:local": "node --env-file=.env dist/server.js",
-    "start:prod": "prisma migrate deploy && node dist/server.js",
+    "start": "tsx src/server.ts",
+    "start:local": "tsx --env-file=.env src/server.ts",
     "clean": "rm -rf dist",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
@@ -32,13 +31,13 @@
     "@prisma/client": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "fastify": "^5.0.0",
+    "tsx": "^4.19.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.0.0",
     "prisma": "^6.0.0",
-    "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   }
 }

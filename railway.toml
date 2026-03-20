@@ -1,6 +1,6 @@
 [build]
-buildCommand = "npm ci --include=dev && npx turbo build --filter=@beauty/api"
+buildCommand = "npm ci && cd apps/api && npx prisma generate"
 
 [deploy]
-startCommand = "cd apps/api && npx prisma migrate deploy && node dist/server.js"
+startCommand = "cd apps/api && npx prisma migrate deploy && npx tsx src/server.ts"
 healthcheckPath = "/health"
