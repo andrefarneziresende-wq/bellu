@@ -29,10 +29,8 @@ async function bootstrap() {
   });
 
   // Plugins
-  const origins = (env.ALLOWED_ORIGINS || env.CORS_ORIGIN).split(',').map((o) => o.trim());
-  console.log('🔒 CORS origins:', origins);
   await app.register(cors, {
-    origin: origins,
+    origin: true,
     credentials: true,
   });
   await app.register(helmet, {
