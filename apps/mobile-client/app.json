@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Bellu",
-    "slug": "glamapp",
+    "slug": "bellu-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -11,26 +11,38 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FAF7F5"
+      "backgroundColor": "#C4918E"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.glamapp.client"
+      "bundleIdentifier": "com.glamapp.client",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FAF7F5"
+        "backgroundColor": "#C4918E"
       },
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyACtVOd9e3hazjcTbkQT6V5VYoZ2dmt-9c"
         }
       },
-      "package": "com.glamapp.client"
+      "package": "com.glamapp.client",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "plugins": [
-      ["expo-router", { "root": "./app" }],
+      [
+        "expo-router",
+        {
+          "root": "./app"
+        }
+      ],
       "expo-localization",
       "expo-splash-screen",
       [
@@ -50,6 +62,15 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false,
+        "root": "./app"
+      },
+      "eas": {
+        "projectId": "b06ec0f9-63d5-498b-932d-b02d82aedb30"
+      }
     }
   }
 }
