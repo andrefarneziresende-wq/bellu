@@ -392,12 +392,15 @@ export default function SearchScreen() {
           style={[styles.mapToggle, showMap && styles.mapToggleActive]}
           onPress={() => {
             if (showMap) {
-              // Switching to list: keep address and results
+              // Switching to list: keep address, results, and location reference
               if (addressQuery) setQuery(addressQuery);
               if (nearbyResults.length > 0) {
                 setResults(nearbyResults);
                 setSearched(true);
               }
+              // Update location reference so distance calculates from the searched address
+              setUserLocation({ lat: region.latitude, lng: region.longitude });
+              setIsGeoSearch(true);
             } else {
               // Switching to map: keep query as address
               if (query) setAddressQuery(query);
