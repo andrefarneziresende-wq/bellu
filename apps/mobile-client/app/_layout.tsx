@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -118,10 +118,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isAuthenticated && !pushRegistered.current) {
       pushRegistered.current = true;
-      setupNotificationChannel();
-      registerForPushNotifications().then((token) => {
-        if (token) sendPushTokenToServer(token);
-      });
+      try {
+        setupNotificationChannel();
+        registerForPushNotifications().then((token) => {
+          if (token) sendPushTokenToServer(token);
+        }).catch(() => {});
+      } catch (e) {
+        console.warn('[Push] Setup failed:', e);
+      }
     }
     if (!isAuthenticated) {
       pushRegistered.current = false;
@@ -171,8 +175,41 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   );
 }
 
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null as Error | null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#FAF7F5' }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#c00', marginBottom: 10 }}>
+            App Error
+          </Text>
+          <ScrollView style={{ maxHeight: 400 }}>
+            <Text style={{ fontSize: 13, color: '#333' }}>
+              {this.state.error.message}
+            </Text>
+            <Text style={{ fontSize: 11, color: '#666', marginTop: 10 }}>
+              {this.state.error.stack}
+            </Text>
+          </ScrollView>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function RootLayout() {
   return (
+    <ErrorBoundary>
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
@@ -189,5 +226,6 @@ export default function RootLayout() {
         </ToastProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
