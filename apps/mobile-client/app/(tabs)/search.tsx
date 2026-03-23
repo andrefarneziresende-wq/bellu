@@ -138,19 +138,33 @@ export default function SearchScreen() {
       let lat: number | null = null;
       let lng: number | null = null;
 
-      // Try Geocoding API with place_id first
+      // Try Places API findplacefromtext (uses same API as autocomplete which works)
       try {
-        const url = `https://maps.googleapis.com/maps/api/geocode/json?place_id=${placeId}&key=${GOOGLE_MAPS_API_KEY}`;
+        const url = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(description)}&inputtype=textquery&fields=geometry&key=${GOOGLE_MAPS_API_KEY}`;
         const res = await fetch(url);
         const data = await res.json();
-        const loc = data.results?.[0]?.geometry?.location;
+        const loc = data.candidates?.[0]?.geometry?.location;
         if (loc) {
           lat = loc.lat;
           lng = loc.lng;
         }
       } catch (_) {}
 
-      // Fallback: try geocoding with address text
+      // Fallback: Place Details API with place_id
+      if (lat === null || lng === null) {
+        try {
+          const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry&key=${GOOGLE_MAPS_API_KEY}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          const loc = data.result?.geometry?.location;
+          if (loc) {
+            lat = loc.lat;
+            lng = loc.lng;
+          }
+        } catch (_) {}
+      }
+
+      // Fallback 2: Geocoding API
       if (lat === null || lng === null) {
         try {
           const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(description)}&key=${GOOGLE_MAPS_API_KEY}`;
@@ -164,7 +178,7 @@ export default function SearchScreen() {
         } catch (_) {}
       }
 
-      // Fallback 2: use expo-location geocoding
+      // Fallback 3: expo-location
       if (lat === null || lng === null) {
         try {
           const geocoded = await Location.geocodeAsync(description);
