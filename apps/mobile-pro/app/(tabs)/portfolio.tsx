@@ -10,10 +10,12 @@ import { colors, spacing, radii } from '../../theme/colors';
 import { api, PortfolioItem } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 import { Button } from '../../components/ui/Button';
+import { useToast } from '../../components/ui/Toast';
 
 export default function PortfolioScreen() {
   const { t } = useTranslation();
   const { professional } = useAuthStore();
+  const toast = useToast();
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -32,7 +34,7 @@ export default function PortfolioScreen() {
       );
       setPortfolio(res.data || []);
     } catch (error: any) {
-      Alert.alert(t('common.error'), error?.message || 'Failed to load portfolio');
+      toast.error(error?.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -46,7 +48,7 @@ export default function PortfolioScreen() {
 
   const handleAdd = async () => {
     if (!newTitle.trim() || !newImageUrl.trim()) {
-      Alert.alert(t('common.error'), t('pro.portfolio.fillRequired'));
+      toast.error(t('pro.portfolio.fillRequired'));
       return;
     }
 
@@ -65,7 +67,7 @@ export default function PortfolioScreen() {
       setNewService('');
       fetchPortfolio();
     } catch (error: any) {
-      Alert.alert(t('common.error'), error?.message || 'Failed to add item');
+      toast.error(error?.message || t('common.error'));
     } finally {
       setAdding(false);
     }
@@ -85,7 +87,7 @@ export default function PortfolioScreen() {
               await api.delete(`/portfolio/${item.id}`);
               fetchPortfolio();
             } catch (error: any) {
-              Alert.alert(t('common.error'), error?.message || 'Failed to delete item');
+              toast.error(error?.message || t('common.error'));
             }
           },
         },

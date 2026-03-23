@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { toast } from '../../components/ui/Toast';
 import { authApi } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -20,7 +22,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert(t('auth.login'), t('auth.fillAllFields'));
+      toast(t('auth.fillAllFields'), 'warning');
       return;
     }
 
@@ -31,7 +33,14 @@ export default function LoginScreen() {
       useAuthStore.getState().login(user, tokens);
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert(t('auth.login'), error.message || t('auth.loginError'));
+      const msg = error.message || '';
+      if (msg.includes('Invalid') || msg.includes('credentials') || msg.includes('not found') || msg.includes('Unauthorized')) {
+        toast(t('auth.loginError'), 'error');
+      } else if (msg.includes('Network') || msg.includes('fetch')) {
+        toast(t('errors.network'), 'error');
+      } else {
+        toast(t('auth.loginError'), 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -42,10 +51,11 @@ export default function LoginScreen() {
       <View style={styles.content}>
         {/* Logo */}
         <Animated.View entering={FadeInDown.delay(100)} style={styles.logoSection}>
-          <View style={styles.logoCircle}>
-            <Ionicons name="sparkles" size={32} color={colors.white} />
-          </View>
-          <Text style={styles.appName}>Beauty</Text>
+          <Image
+            source={require('../../assets/logo.png')}
+            style={styles.logo}
+            contentFit="contain"
+          />
           <Text style={styles.title}>{t('auth.loginTitle')}</Text>
           <Text style={styles.subtitle}>{t('auth.loginSubtitle')}</Text>
         </Animated.View>
@@ -109,10 +119,9 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { flex: 1, paddingHorizontal: spacing.xxl },
-  logoSection: { alignItems: 'center', paddingTop: spacing.xxxl, paddingBottom: spacing.xl },
-  logoCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.md },
-  appName: { fontSize: typography.sizes.xxxl, fontWeight: typography.weights.bold, color: colors.text },
-  title: { fontSize: typography.sizes.xl, fontWeight: typography.weights.semibold, color: colors.text, marginTop: spacing.lg },
+  logoSection: { alignItems: 'center', paddingTop: spacing.xxl, paddingBottom: spacing.lg },
+  logo: { width: 120, height: 120, marginBottom: spacing.sm },
+  title: { fontSize: typography.sizes.xl, fontWeight: typography.weights.semibold, color: colors.text, marginTop: spacing.sm },
   subtitle: { fontSize: typography.sizes.sm, color: colors.textSecondary, marginTop: spacing.xs, textAlign: 'center' },
   socialSection: { gap: spacing.md },
   socialBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingVertical: spacing.lg, borderRadius: radii.lg, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },

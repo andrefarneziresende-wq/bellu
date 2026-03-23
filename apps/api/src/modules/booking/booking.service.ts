@@ -1,11 +1,21 @@
 import { prisma } from '../../config/prisma.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../../shared/errors.js';
+import { onSessionCompleted } from '../client-package/client-package.service.js';
 
 interface CreateBookingInput {
-  professionalId: string;
+  professionalId?: string;
   serviceId: string;
   date: string;
   startTime: string;
+  endTime?: string;
+  memberId?: string;
+  userId?: string;
+  clientName?: string;
+  clientPhone?: string;
+  notes?: string;
+  source?: 'APP' | 'MANUAL' | 'WALKIN';
+  totalPrice?: number;
+  currency?: string;
 }
 
 interface UpdateBookingStatusInput {
@@ -26,6 +36,13 @@ function timeToMinutes(time: string): number {
 }
 
 export async function createBooking(userId: string, data: CreateBookingInput) {
+  // Block bookings in the past
+  const bookingDateTime = new Date(`${data.date}T${data.startTime}:00`);
+  const now = new Date();
+  if (bookingDateTime < now) {
+    throw new BadRequestError('Cannot create a booking in the past');
+  }
+
   const service = await prisma.service.findUnique({
     where: { id: data.serviceId },
   });
@@ -34,17 +51,21 @@ export async function createBooking(userId: string, data: CreateBookingInput) {
     throw new NotFoundError('Service');
   }
 
-  if (service.professionalId !== data.professionalId) {
+  // Resolve professionalId: from body or from the service's professional
+  const professionalId = data.professionalId || service.professionalId;
+
+  // If professionalId was provided, verify the service belongs to that professional
+  if (data.professionalId && service.professionalId !== data.professionalId) {
     throw new BadRequestError('Service does not belong to this professional');
   }
 
-  const endTime = addMinutesToTime(data.startTime, service.durationMinutes);
+  const endTime = data.endTime || addMinutesToTime(data.startTime, service.durationMinutes);
 
   // Check for overlapping confirmed/pending bookings
   const bookingDate = new Date(data.date);
   const overlapping = await prisma.booking.findFirst({
     where: {
-      professionalId: data.professionalId,
+      professionalId,
       date: bookingDate,
       status: { in: ['CONFIRMED', 'PENDING'] },
       AND: [
@@ -58,20 +79,47 @@ export async function createBooking(userId: string, data: CreateBookingInput) {
     throw new BadRequestError('This time slot is not available');
   }
 
+  // Determine if this is a professional creating a manual booking
+  const professional = await prisma.professional.findFirst({
+    where: { userId, id: professionalId },
+  });
+  const isProManual = !!professional;
+
+  // Resolve memberId: use provided, or randomly assign an active member
+  let memberId = data.memberId || null;
+  if (!memberId) {
+    const activeMembers = await prisma.professionalMember.findMany({
+      where: { professionalId, active: true },
+      select: { id: true },
+    });
+    if (activeMembers.length > 0) {
+      const randomIndex = Math.floor(Math.random() * activeMembers.length);
+      memberId = activeMembers[randomIndex].id;
+    }
+  }
+
   const booking = await prisma.booking.create({
     data: {
-      userId,
-      professionalId: data.professionalId,
+      userId: isProManual ? (data.userId || null) : userId,
+      professionalId,
+      memberId,
       serviceId: data.serviceId,
       date: bookingDate,
       startTime: data.startTime,
       endTime,
-      totalPrice: service.price,
-      currency: service.currency,
+      totalPrice: data.totalPrice ?? service.price,
+      currency: data.currency || service.currency,
+      source: data.source || 'APP',
+      clientName: data.clientName || null,
+      clientPhone: data.clientPhone || null,
+      notes: data.notes || null,
+      status: isProManual ? 'CONFIRMED' : 'PENDING',
     },
     include: {
       service: true,
       professional: { select: { id: true, businessName: true } },
+      member: { select: { id: true, name: true, avatar: true } },
+      user: { select: { id: true, name: true } },
     },
   });
 
@@ -248,6 +296,11 @@ export async function updateBookingStatus(
       user: { select: { id: true, name: true } },
     },
   });
+
+  // If this booking belongs to a client package, update session counter
+  if (newStatus === 'COMPLETED') {
+    await onSessionCompleted(id).catch(() => {});
+  }
 
   return updated;
 }

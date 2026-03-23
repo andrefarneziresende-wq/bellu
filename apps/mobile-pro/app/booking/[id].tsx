@@ -1,23 +1,41 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, radii } from '../../theme/colors';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { api, Booking } from '../../services/api';
+import { useToast } from '../../components/ui/Toast';
+import { useAuthStore } from '../../stores/authStore';
+
+interface BookingPhoto {
+  id: string;
+  imageUrl: string;
+  description: string | null;
+  createdAt: string;
+  uploadedBy?: { id: string; name: string };
+}
 
 export default function BookingDetailScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const toast = useToast();
+  const { token } = useAuthStore();
   const [booking, setBooking] = useState<Booking | null>(null);
+  const [photos, setPhotos] = useState<BookingPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [photoDescription, setPhotoDescription] = useState('');
+  const [showPhotoInput, setShowPhotoInput] = useState(false);
 
   const fetchBooking = async () => {
     try {
@@ -25,24 +43,36 @@ export default function BookingDetailScreen() {
       const res = await api.get<{ data: Booking }>(`/bookings/${id}`);
       setBooking(res.data);
     } catch (error: any) {
-      Alert.alert(t('common.error'), error?.message || 'Failed to load booking');
+      toast.error(error?.message || t('common.error'));
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchPhotos = async () => {
+    try {
+      const res = await api.get<{ data: BookingPhoto[] }>(`/booking-photos/${id}`);
+      setPhotos(res.data || []);
+    } catch {
+      setPhotos([]);
+    }
+  };
+
   useEffect(() => {
-    if (id) fetchBooking();
+    if (id) {
+      fetchBooking();
+      fetchPhotos();
+    }
   }, [id]);
 
   const handleConfirm = async () => {
     try {
       setActionLoading(true);
       await api.patch(`/bookings/${id}/status`, { status: 'confirmed' });
-      Alert.alert(t('common.success'), t('booking.confirmed'));
+      toast.success(t('booking.confirmed'));
       fetchBooking();
     } catch (error: any) {
-      Alert.alert(t('common.error'), error?.message || 'Failed to confirm booking');
+      toast.error(error?.message || t('common.error'));
     } finally {
       setActionLoading(false);
     }
@@ -61,10 +91,10 @@ export default function BookingDetailScreen() {
             try {
               setActionLoading(true);
               await api.patch(`/bookings/${id}/status`, { status: 'cancelled' });
-              Alert.alert(t('common.success'), t('booking.cancelled'));
+              toast.success(t('booking.cancelled'));
               fetchBooking();
             } catch (error: any) {
-              Alert.alert(t('common.error'), error?.message || 'Failed to cancel booking');
+              toast.error(error?.message || t('common.error'));
             } finally {
               setActionLoading(false);
             }
@@ -78,13 +108,112 @@ export default function BookingDetailScreen() {
     try {
       setActionLoading(true);
       await api.patch(`/bookings/${id}/status`, { status: 'completed' });
-      Alert.alert(t('common.success'), t('booking.completed'));
-      router.back();
+      toast.success(t('booking.completed'));
+      fetchBooking();
     } catch (error: any) {
-      Alert.alert(t('common.error'), error?.message || 'Failed to complete booking');
+      toast.error(error?.message || t('common.error'));
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handlePickPhoto = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      toast.error(t('pro.photos.permissionDenied'));
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+      base64: false,
+    });
+
+    if (result.canceled || !result.assets?.[0]) return;
+
+    await uploadPhoto(result.assets[0].uri, result.assets[0].fileName || 'photo.jpg', result.assets[0].mimeType || 'image/jpeg');
+  };
+
+  const handleTakePhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      toast.error(t('pro.photos.permissionDenied'));
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets?.[0]) return;
+
+    await uploadPhoto(result.assets[0].uri, 'camera-photo.jpg', 'image/jpeg');
+  };
+
+  const uploadPhoto = async (uri: string, filename: string, mimeType: string) => {
+    setUploading(true);
+    try {
+      const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3333/api';
+
+      // Create FormData for multipart upload
+      const formData = new FormData();
+      formData.append('file', {
+        uri,
+        name: filename,
+        type: mimeType,
+      } as any);
+      if (photoDescription.trim()) {
+        formData.append('description', photoDescription.trim());
+      }
+
+      const response = await fetch(`${API_BASE_URL}/booking-photos/${id}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Upload failed');
+      }
+
+      toast.success(t('pro.photos.uploaded'));
+      setPhotoDescription('');
+      setShowPhotoInput(false);
+      fetchPhotos();
+    } catch (error: any) {
+      toast.error(error?.message || t('common.error'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeletePhoto = (photoId: string) => {
+    Alert.alert(
+      t('common.confirm'),
+      t('pro.photos.deleteConfirm'),
+      [
+        { text: t('common.no'), style: 'cancel' },
+        {
+          text: t('common.yes'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.delete(`/booking-photos/photo/${photoId}`);
+              toast.success(t('pro.photos.deleted'));
+              fetchPhotos();
+            } catch (error: any) {
+              toast.error(error?.message || t('common.error'));
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -130,8 +259,9 @@ export default function BookingDetailScreen() {
   const startTime = booking.startTime || booking.time || '';
   const endTime = booking.endTime || '';
   const timeDisplay = endTime ? `${startTime} - ${endTime}` : startTime;
+  const isCompleted = booking.status === 'completed';
 
-  const statusVariant = booking.status === 'confirmed' || booking.status === 'completed'
+  const statusVariant = booking.status === 'confirmed' || isCompleted
     ? 'success'
     : booking.status === 'cancelled'
     ? 'error'
@@ -139,7 +269,7 @@ export default function BookingDetailScreen() {
 
   const statusText = booking.status === 'confirmed'
     ? t('booking.confirmed')
-    : booking.status === 'completed'
+    : isCompleted
     ? t('booking.completed')
     : booking.status === 'cancelled'
     ? t('booking.cancelled')
@@ -206,6 +336,83 @@ export default function BookingDetailScreen() {
           </Card>
         </Animated.View>
 
+        {/* Evolution Photos - only for completed bookings */}
+        {isCompleted && (
+          <Animated.View entering={FadeInDown.delay(350)}>
+            <Card style={styles.card}>
+              <View style={styles.photoHeader}>
+                <Text style={styles.cardTitle}>{t('pro.photos.evolution')}</Text>
+                <Pressable
+                  style={styles.addPhotoBtn}
+                  onPress={() => setShowPhotoInput(!showPhotoInput)}
+                >
+                  <Ionicons name="camera-outline" size={18} color={colors.white} />
+                  <Text style={styles.addPhotoBtnText}>{t('pro.photos.add')}</Text>
+                </Pressable>
+              </View>
+
+              {/* Photo upload form */}
+              {showPhotoInput && (
+                <View style={styles.photoForm}>
+                  <TextInput
+                    style={styles.photoDescInput}
+                    placeholder={t('pro.photos.descriptionPlaceholder')}
+                    placeholderTextColor={colors.textSecondary}
+                    value={photoDescription}
+                    onChangeText={setPhotoDescription}
+                    multiline
+                    numberOfLines={2}
+                  />
+                  <View style={styles.photoActions}>
+                    {uploading ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <>
+                        <Pressable style={styles.photoActionBtn} onPress={handleTakePhoto}>
+                          <Ionicons name="camera" size={20} color={colors.primary} />
+                          <Text style={styles.photoActionText}>{t('pro.photos.camera')}</Text>
+                        </Pressable>
+                        <Pressable style={styles.photoActionBtn} onPress={handlePickPhoto}>
+                          <Ionicons name="images" size={20} color={colors.primary} />
+                          <Text style={styles.photoActionText}>{t('pro.photos.gallery')}</Text>
+                        </Pressable>
+                      </>
+                    )}
+                  </View>
+                </View>
+              )}
+
+              {/* Photo grid */}
+              {photos.length === 0 ? (
+                <View style={styles.noPhotos}>
+                  <Ionicons name="images-outline" size={32} color={colors.border} />
+                  <Text style={styles.noPhotosText}>{t('pro.photos.noPhotos')}</Text>
+                </View>
+              ) : (
+                <View style={styles.photoGrid}>
+                  {photos.map((photo) => (
+                    <View key={photo.id} style={styles.photoItem}>
+                      <Image source={{ uri: photo.imageUrl }} style={styles.photoImage} contentFit="cover" />
+                      {photo.description && (
+                        <Text style={styles.photoDesc} numberOfLines={2}>{photo.description}</Text>
+                      )}
+                      <Text style={styles.photoDate}>
+                        {new Date(photo.createdAt).toLocaleDateString('pt-BR')}
+                      </Text>
+                      <Pressable
+                        style={styles.photoDeleteBtn}
+                        onPress={() => handleDeletePhoto(photo.id)}
+                      >
+                        <Ionicons name="trash-outline" size={16} color={colors.error} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </Card>
+          </Animated.View>
+        )}
+
         {/* Actions */}
         <Animated.View entering={FadeInDown.delay(400)} style={styles.actions}>
           {actionLoading ? (
@@ -256,4 +463,22 @@ const styles = StyleSheet.create({
   actions: { marginTop: spacing.lg, gap: spacing.md },
   cancelBtn: { alignItems: 'center', paddingVertical: spacing.lg },
   cancelText: { fontSize: 15, fontWeight: '600', color: colors.error },
+
+  // Photo section
+  photoHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
+  addPhotoBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radii.full },
+  addPhotoBtnText: { fontSize: 13, fontWeight: '600', color: colors.white },
+  photoForm: { backgroundColor: colors.background, borderRadius: radii.md, padding: spacing.md, marginBottom: spacing.md },
+  photoDescInput: { backgroundColor: colors.white, borderRadius: radii.sm, borderWidth: 1, borderColor: colors.border, padding: spacing.md, fontSize: 14, color: colors.text, minHeight: 60, textAlignVertical: 'top', marginBottom: spacing.sm },
+  photoActions: { flexDirection: 'row', gap: spacing.md },
+  photoActionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, borderWidth: 1, borderColor: colors.primary, borderRadius: radii.md, paddingVertical: spacing.sm },
+  photoActionText: { fontSize: 14, fontWeight: '500', color: colors.primary },
+  noPhotos: { alignItems: 'center', paddingVertical: spacing.xl },
+  noPhotosText: { fontSize: 14, color: colors.textSecondary, marginTop: spacing.sm },
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  photoItem: { width: '48%', marginBottom: spacing.sm },
+  photoImage: { width: '100%', aspectRatio: 1, borderRadius: radii.md },
+  photoDesc: { fontSize: 12, color: colors.text, marginTop: 4 },
+  photoDate: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  photoDeleteBtn: { position: 'absolute', top: 6, right: 6, width: 28, height: 28, borderRadius: 14, backgroundColor: colors.white, justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2 },
 });

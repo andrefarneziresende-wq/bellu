@@ -18,7 +18,9 @@ export async function getHandler(
 }
 
 export async function setHandler(request: FastifyRequest, reply: FastifyReply) {
-  const hours = setWorkingHoursSchema.parse(request.body);
+  const body = request.body as { hours?: unknown } | unknown;
+  const rawHours = (body && typeof body === 'object' && 'hours' in body) ? (body as { hours: unknown }).hours : body;
+  const hours = setWorkingHoursSchema.parse(rawHours);
 
   const professional = await prisma.professional.findUnique({
     where: { userId: request.user.userId },

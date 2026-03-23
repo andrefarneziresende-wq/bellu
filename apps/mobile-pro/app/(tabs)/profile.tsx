@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors, spacing, radii } from '../../theme/colors';
 import { useAuthStore } from '../../stores/authStore';
+import { Badge } from '../../components/ui/Badge';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -22,7 +23,7 @@ const menuItems: { icon: IoniconsName; labelKey: string }[] = [
 export default function ProfileScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { professional, logout } = useAuthStore();
+  const { professional, proContext, logout } = useAuthStore();
 
   const handleLogout = () => {
     Alert.alert(
@@ -50,8 +51,15 @@ export default function ProfileScreen() {
           <View style={styles.avatar}>
             <Ionicons name="storefront" size={36} color={colors.white} />
           </View>
-          <Text style={styles.name}>{professional?.salonName || professional?.name || ''}</Text>
+          <Text style={styles.name}>{proContext?.businessName || professional?.salonName || professional?.name || ''}</Text>
           <Text style={styles.subtitle}>{professional?.name || ''}</Text>
+          {proContext && (
+            <View style={styles.roleBadge}>
+              <Text style={styles.roleText}>
+                {proContext.type === 'owner' ? '👑 ' : ''}{proContext.roleName}
+              </Text>
+            </View>
+          )}
           <View style={styles.ratingRow}>
             <Text style={styles.star}>★</Text>
             <Text style={styles.rating}>{professional?.rating?.toFixed(1) || '0.0'}</Text>
@@ -100,6 +108,8 @@ const styles = StyleSheet.create({
   reviews: { fontSize: 13, color: colors.textSecondary },
   editBtn: { marginTop: spacing.md, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, borderRadius: radii.full, borderWidth: 1, borderColor: colors.primary },
   editBtnText: { fontSize: 14, fontWeight: '600', color: colors.primary },
+  roleBadge: { marginTop: spacing.sm, backgroundColor: colors.primaryLight + '30', paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radii.full },
+  roleText: { fontSize: 13, fontWeight: '600', color: colors.primaryDark },
   menu: { backgroundColor: colors.card, borderRadius: radii.xl, overflow: 'hidden', elevation: 2, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 8 },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.lg, paddingHorizontal: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.borderLight, gap: spacing.md },
   menuLabel: { flex: 1, fontSize: 15, color: colors.text },

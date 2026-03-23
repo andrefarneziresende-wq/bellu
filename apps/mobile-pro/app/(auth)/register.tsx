@@ -9,10 +9,12 @@ import { colors, spacing, radii } from '../../theme/colors';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useAuthStore } from '../../stores/authStore';
+import { useToast } from '../../components/ui/Toast';
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const toast = useToast();
   const [name, setName] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [email, setEmail] = useState('');
@@ -23,7 +25,7 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim() || !phone.trim()) {
-      Alert.alert(t('common.error'), t('auth.fillAllFields'));
+      toast.error(t('auth.fillAllFields'));
       return;
     }
 
@@ -39,10 +41,7 @@ export default function RegisterScreen() {
       });
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert(
-        t('common.error'),
-        error?.message || t('auth.registerError'),
-      );
+      toast.error(error?.message || t('auth.registerError'));
     }
   };
 

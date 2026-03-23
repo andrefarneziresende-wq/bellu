@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ToastProvider } from '../components/ui/Toast';
 import '../locales';
 
 const queryClient = new QueryClient({
@@ -22,6 +23,7 @@ export default function RootLayout() {
             animation: 'slide_from_right',
           }}
         />
+        <ToastProvider />
       </QueryClientProvider>
     </SafeAreaProvider>
   );

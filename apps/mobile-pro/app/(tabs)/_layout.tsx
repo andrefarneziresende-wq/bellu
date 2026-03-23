@@ -3,9 +3,27 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform, StyleSheet } from 'react-native';
 import { colors } from '../../theme/colors';
+import { useAuthStore } from '../../stores/authStore';
+
+// Map each tab to the permissions required to see it
+// Empty array = always visible
+const tabPermissions: Record<string, string[]> = {
+  index: [],
+  agenda: ['agenda.view'],
+  portfolio: ['portfolio.view'],
+  finances: ['finances.view'],
+  profile: [],
+};
 
 export default function TabLayout() {
   const { t } = useTranslation();
+  const hasAnyPermission = useAuthStore((s) => s.hasAnyPermission);
+
+  const canSee = (tab: string) => {
+    const perms = tabPermissions[tab] || [];
+    if (perms.length === 0) return true;
+    return hasAnyPermission(perms);
+  };
 
   return (
     <Tabs
@@ -30,6 +48,7 @@ export default function TabLayout() {
         name="agenda"
         options={{
           title: t('pro.tabs.agenda'),
+          href: canSee('agenda') ? '/agenda' : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar-outline" size={size} color={color} />
           ),
@@ -39,6 +58,7 @@ export default function TabLayout() {
         name="portfolio"
         options={{
           title: t('pro.tabs.portfolio'),
+          href: canSee('portfolio') ? '/portfolio' : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="images-outline" size={size} color={color} />
           ),
@@ -48,6 +68,7 @@ export default function TabLayout() {
         name="finances"
         options={{
           title: t('pro.tabs.finances'),
+          href: canSee('finances') ? '/finances' : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="wallet-outline" size={size} color={color} />
           ),

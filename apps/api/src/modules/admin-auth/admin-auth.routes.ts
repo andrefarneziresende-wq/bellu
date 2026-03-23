@@ -24,6 +24,13 @@ import {
   deleteCategoryHandler,
   reorderCategoryHandler,
   listServicesHandler,
+  listServiceTemplatesHandler,
+  createServiceTemplateHandler,
+  updateServiceTemplateHandler,
+  deleteServiceTemplateHandler,
+  createAdminUserHandler,
+  updateAdminUserHandler,
+  deleteAdminUserHandler,
 } from './admin-auth.controller.js';
 
 export async function adminAuthRoutes(app: FastifyInstance) {
@@ -63,4 +70,15 @@ export async function adminAuthRoutes(app: FastifyInstance) {
 
   // Services
   app.get('/services', { preHandler: [authenticate] }, listServicesHandler);
+
+  // Service Templates (catalog)
+  app.get('/service-templates', { preHandler: [authenticate] }, listServiceTemplatesHandler);
+  app.post('/service-templates', { preHandler: [authenticate] }, createServiceTemplateHandler);
+  app.patch<{ Params: { id: string } }>('/service-templates/:id', { preHandler: [authenticate] }, updateServiceTemplateHandler);
+  app.delete<{ Params: { id: string } }>('/service-templates/:id', { preHandler: [authenticate] }, deleteServiceTemplateHandler);
+
+  // Admin Users CRUD
+  app.post('/admin-users', { preHandler: [authenticate] }, createAdminUserHandler);
+  app.patch<{ Params: { id: string } }>('/admin-users/:id', { preHandler: [authenticate] }, updateAdminUserHandler);
+  app.delete<{ Params: { id: string } }>('/admin-users/:id', { preHandler: [authenticate] }, deleteAdminUserHandler);
 }

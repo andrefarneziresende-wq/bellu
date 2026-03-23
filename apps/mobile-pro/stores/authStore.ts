@@ -14,9 +14,19 @@ export interface Professional {
   isVerified: boolean;
 }
 
+export interface ProContext {
+  type: 'owner' | 'staff';
+  professionalId: string;
+  businessName: string;
+  memberId: string | null;
+  roleName: string;
+  permissions: string[];
+}
+
 interface AuthState {
   professional: Professional | null;
   token: string | null;
+  proContext: ProContext | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -24,6 +34,9 @@ interface AuthState {
   logout: () => void;
   setLoading: (loading: boolean) => void;
   fetchProfile: () => Promise<void>;
+  fetchProContext: () => Promise<void>;
+  hasPermission: (permission: string) => boolean;
+  hasAnyPermission: (permissions: string[]) => boolean;
 }
 
 interface RegisterData {
@@ -39,6 +52,7 @@ interface RegisterData {
 export const useAuthStore = create<AuthState>((set, get) => ({
   professional: null,
   token: null,
+  proContext: null,
   isAuthenticated: false,
   isLoading: false,
 
@@ -55,7 +69,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { tokens } = response.data;
       set({ token: tokens.accessToken });
 
-      // Fetch professional profile after login
+      // Fetch pro context (determines owner vs staff + permissions)
+      await get().fetchProContext();
+
+      // Fetch professional profile
       await get().fetchProfile();
 
       set({ isAuthenticated: true, isLoading: false });
@@ -92,7 +109,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         taxId: data.taxId || '',
       });
 
-      // Step 3: Fetch the full professional profile
+      // Step 3: Fetch pro context and profile
+      await get().fetchProContext();
       await get().fetchProfile();
 
       set({ isAuthenticated: true, isLoading: false });
@@ -113,10 +131,37 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  fetchProContext: async () => {
+    try {
+      const response = await api.get<{
+        data: ProContext;
+      }>('/pro/me');
+      set({ proContext: response.data });
+    } catch {
+      // User might not have a pro profile yet
+      set({ proContext: null });
+    }
+  },
+
+  hasPermission: (permission: string) => {
+    const ctx = get().proContext;
+    if (!ctx) return false;
+    if (ctx.permissions.includes('*')) return true;
+    return ctx.permissions.includes(permission);
+  },
+
+  hasAnyPermission: (permissions: string[]) => {
+    const ctx = get().proContext;
+    if (!ctx) return false;
+    if (ctx.permissions.includes('*')) return true;
+    return permissions.some((p) => ctx.permissions.includes(p));
+  },
+
   logout: () => {
     set({
       professional: null,
       token: null,
+      proContext: null,
       isAuthenticated: false,
     });
   },

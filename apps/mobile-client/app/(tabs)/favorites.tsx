@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { Card } from '../../components/ui/Card';
+import { toast } from '../../components/ui/Toast';
 import { favoritesApi } from '../../services/api';
 
 export default function FavoritesScreen() {
@@ -41,7 +42,7 @@ export default function FavoritesScreen() {
         return profId !== professionalId;
       }));
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to update favorite');
+      toast(error.message || t('common.error'), 'error');
     }
   };
 

@@ -11,7 +11,8 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { colors, radii, typography, spacing } from '../../theme/colors';
 
 interface ButtonProps {
-  title: string;
+  title?: string;
+  label?: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
@@ -26,6 +27,7 @@ const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 export function Button({
   title,
+  label,
   onPress,
   variant = 'primary',
   size = 'md',
@@ -35,6 +37,7 @@ export function Button({
   style,
   textStyle,
 }: ButtonProps) {
+  const text = title || label || '';
   const isDisabled = disabled || loading;
 
   return (
@@ -66,7 +69,7 @@ export function Button({
             textStyle,
           ]}
         >
-          {title}
+          {text}
         </Text>
       )}
     </AnimatedTouchable>

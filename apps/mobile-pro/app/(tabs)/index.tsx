@@ -1,15 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { colors, spacing, radii, shadows } from '../../theme/colors';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { api, Booking } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import { useToast } from '../../components/ui/Toast';
 
 interface StatCardProps {
   title: string;
@@ -32,7 +33,9 @@ function StatCard({ title, value, icon, color }: StatCardProps) {
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
-  const { professional } = useAuthStore();
+  const { professional, proContext } = useAuthStore();
+  const toast = useToast();
+  const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -67,7 +70,7 @@ export default function DashboardScreen() {
         occupancyRate: todayBookings.length > 0 ? Math.round((confirmedBookings.length / todayBookings.length) * 100) : 0,
       });
     } catch (error: any) {
-      Alert.alert(t('common.error'), error?.message || 'Failed to load dashboard');
+      toast.error(error?.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -94,7 +97,14 @@ export default function DashboardScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <Animated.View entering={FadeInDown.delay(100)}>
           <Text style={styles.greeting}>{t('pro.dashboard.title')}</Text>
-          <Text style={styles.subtitle}>{professional?.salonName || professional?.name || ''}</Text>
+          <Text style={styles.subtitle}>{proContext?.businessName || professional?.salonName || professional?.name || ''}</Text>
+          {proContext && (
+            <View style={styles.roleBadge}>
+              <Text style={styles.roleText}>
+                {proContext.type === 'owner' ? '👑 ' : ''}{proContext.roleName}
+              </Text>
+            </View>
+          )}
         </Animated.View>
 
         {/* Stats Grid */}
@@ -123,6 +133,16 @@ export default function DashboardScreen() {
             icon="stats-chart"
             color="#6C7CE0"
           />
+        </Animated.View>
+
+        {/* Quick Actions */}
+        <Animated.View entering={FadeInDown.delay(250)} style={styles.quickActions}>
+          <Pressable style={styles.quickAction} onPress={() => router.push('/packages')}>
+            <View style={[styles.quickIcon, { backgroundColor: '#C4918E20' }]}>
+              <Ionicons name="cube-outline" size={22} color={colors.primary} />
+            </View>
+            <Text style={styles.quickText}>{t('proDashboard.packages.title')}</Text>
+          </Pressable>
         </Animated.View>
 
         {/* Today's Bookings */}
@@ -162,6 +182,8 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: spacing.lg },
   greeting: { fontSize: 28, fontWeight: '700', color: colors.text, paddingTop: spacing.lg },
   subtitle: { fontSize: 16, color: colors.textSecondary, marginTop: spacing.xs },
+  roleBadge: { alignSelf: 'flex-start', marginTop: spacing.sm, backgroundColor: colors.primaryLight + '30', paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radii.full },
+  roleText: { fontSize: 13, fontWeight: '600', color: colors.primaryDark },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.xl },
   statCard: { width: '47%', padding: spacing.lg, alignItems: 'flex-start' },
   statIcon: { width: 40, height: 40, borderRadius: radii.md, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.sm },
@@ -174,4 +196,8 @@ const styles = StyleSheet.create({
   bookingInfo: { flex: 1, marginLeft: spacing.md },
   clientName: { fontSize: 15, fontWeight: '600', color: colors.text },
   serviceName: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+  quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.lg },
+  quickAction: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.white, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border },
+  quickIcon: { width: 36, height: 36, borderRadius: radii.sm, justifyContent: 'center', alignItems: 'center' },
+  quickText: { fontSize: 14, fontWeight: '600', color: colors.text },
 });

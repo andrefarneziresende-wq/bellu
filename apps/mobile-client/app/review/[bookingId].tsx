@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { toast } from '../../components/ui/Toast';
 import { reviewsApi } from '../../services/api';
 
 export default function ReviewScreen() {
@@ -21,7 +22,7 @@ export default function ReviewScreen() {
   const handleSubmit = async () => {
     if (rating === 0) return;
     if (!bookingId) {
-      Alert.alert('Error', 'Booking ID is missing');
+      toast(t('common.error'), 'error');
       return;
     }
 
@@ -32,11 +33,10 @@ export default function ReviewScreen() {
         rating,
         ...(comment.trim() ? { comment: comment.trim() } : {}),
       });
-      Alert.alert(t('review.leaveReview'), t('review.submitSuccess'), [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      toast(t('review.submitSuccess'), 'success');
+      router.back();
     } catch (error: any) {
-      Alert.alert(t('review.leaveReview'), error.message || 'Failed to submit review');
+      toast(error.message || t('common.error'), 'error');
     } finally {
       setSubmitting(false);
     }

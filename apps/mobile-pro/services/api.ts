@@ -1,6 +1,8 @@
+import { Platform } from 'react-native';
 import { useAuthStore } from '../stores/authStore';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3333/api';
+const DEFAULT_API_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? `http://${DEFAULT_API_HOST}:3333/api`;
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';

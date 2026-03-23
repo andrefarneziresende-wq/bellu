@@ -2,6 +2,7 @@ import { prisma } from '../../config/prisma.js';
 import { NotFoundError, ForbiddenError } from '../../shared/errors.js';
 
 interface CreateServiceInput {
+  serviceTemplateId?: string;
   categoryId: string;
   name: string;
   description?: string;
@@ -28,11 +29,27 @@ export async function createService(professionalId: string, data: CreateServiceI
     throw new NotFoundError('Professional');
   }
 
+  // If serviceTemplateId provided, get name/category from template
+  let name = data.name;
+  let categoryId = data.categoryId;
+  let serviceTemplateId = data.serviceTemplateId;
+
+  if (serviceTemplateId) {
+    const template = await prisma.serviceTemplate.findUnique({
+      where: { id: serviceTemplateId },
+    });
+    if (template) {
+      name = template.name;
+      categoryId = template.categoryId;
+    }
+  }
+
   const service = await prisma.service.create({
     data: {
       professionalId,
-      categoryId: data.categoryId,
-      name: data.name,
+      categoryId,
+      serviceTemplateId: serviceTemplateId || null,
+      name,
       description: data.description,
       price: data.price,
       currency: data.currency,
@@ -40,6 +57,7 @@ export async function createService(professionalId: string, data: CreateServiceI
     },
     include: {
       category: true,
+      serviceTemplate: true,
     },
   });
 
@@ -59,6 +77,7 @@ export async function getServicesByProfessional(professionalId: string) {
     where: { professionalId, active: true },
     include: {
       category: true,
+      serviceTemplate: true,
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -84,6 +103,7 @@ export async function updateService(id: string, professionalId: string, data: Up
     data,
     include: {
       category: true,
+      serviceTemplate: true,
     },
   });
 

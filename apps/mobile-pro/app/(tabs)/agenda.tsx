@@ -9,6 +9,7 @@ import { colors, spacing, radii } from '../../theme/colors';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { api, Booking } from '../../services/api';
+import { useToast } from '../../components/ui/Toast';
 
 function getWeekDays(): { label: string; date: string; fullDate: string }[] {
   const today = new Date();
@@ -36,6 +37,7 @@ export default function AgendaScreen() {
   const { t } = useTranslation();
   const weekDays = getWeekDays();
   const todayFull = new Date().toISOString().split('T')[0];
+  const toast = useToast();
   const todayEntry = weekDays.find((d) => d.fullDate === todayFull);
   const [selectedDay, setSelectedDay] = useState(todayEntry?.date || weekDays[0].date);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -51,7 +53,7 @@ export default function AgendaScreen() {
       );
       setBookings(res.data || []);
     } catch (error: any) {
-      Alert.alert(t('common.error'), error?.message || 'Failed to load bookings');
+      toast.error(error?.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -70,10 +72,10 @@ export default function AgendaScreen() {
   const handleConfirm = async (bookingId: string) => {
     try {
       await api.patch(`/bookings/${bookingId}/status`, { status: 'confirmed' });
-      Alert.alert(t('common.success'), t('booking.confirmed'));
+      toast.success(t('booking.confirmed'));
       fetchBookings(selectedFullDate);
     } catch (error: any) {
-      Alert.alert(t('common.error'), error?.message || 'Failed to confirm booking');
+      toast.error(error?.message || t('common.error'));
     }
   };
 
@@ -89,10 +91,10 @@ export default function AgendaScreen() {
           onPress: async () => {
             try {
               await api.patch(`/bookings/${bookingId}/status`, { status: 'cancelled' });
-              Alert.alert(t('common.success'), t('booking.cancelled'));
+              toast.success(t('booking.cancelled'));
               fetchBookings(selectedFullDate);
             } catch (error: any) {
-              Alert.alert(t('common.error'), error?.message || 'Failed to cancel booking');
+              toast.error(error?.message || t('common.error'));
             }
           },
         },

@@ -1,31 +1,32 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, Loader2, Mail, Lock, AlertCircle } from 'lucide-react';
+import { Loader2, Mail, Lock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth-context';
+import { useTranslation } from '@/lib/i18n';
 
 interface FieldErrors {
   email?: string;
   password?: string;
 }
 
-function validateForm(email: string, password: string): FieldErrors {
+function validateForm(email: string, password: string, t: (key: string, params?: Record<string, string>) => string): FieldErrors {
   const errors: FieldErrors = {};
 
   if (!email.trim()) {
-    errors.email = 'Informe seu email';
+    errors.email = t('validation.required');
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errors.email = 'Email inválido';
+    errors.email = t('validation.invalidEmail');
   }
 
   if (!password) {
-    errors.password = 'Informe sua senha';
+    errors.password = t('validation.required');
   } else if (password.length < 4) {
-    errors.password = 'Senha deve ter pelo menos 4 caracteres';
+    errors.password = t('validation.minLength', { min: '4' });
   }
 
   return errors;
@@ -38,6 +39,7 @@ export default function LoginPage() {
   const [apiError, setApiError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const { t } = useTranslation();
 
   function clearFieldError(field: keyof FieldErrors) {
     setErrors((prev) => {
@@ -52,7 +54,7 @@ export default function LoginPage() {
     e.preventDefault();
     setApiError('');
 
-    const fieldErrors = validateForm(email, password);
+    const fieldErrors = validateForm(email, password, t);
     setErrors(fieldErrors);
 
     if (Object.keys(fieldErrors).length > 0) return;
@@ -62,11 +64,11 @@ export default function LoginPage() {
     try {
       await login(email, password);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao fazer login';
+      const message = err instanceof Error ? err.message : t('errors.generic');
       if (message.includes('Unauthorized') || message.includes('Invalid credentials') || message.includes('credentials')) {
-        setApiError('Email ou senha incorretos');
+        setApiError(t('errors.invalidCredentials'));
       } else if (message.includes('Failed to fetch') || message.includes('fetch')) {
-        setApiError('Não foi possível conectar ao servidor. Verifique se a API está rodando.');
+        setApiError(t('errors.network'));
       } else {
         setApiError(message);
       }
@@ -86,15 +88,13 @@ export default function LoginPage() {
       <Card className="relative w-full max-w-[420px] border-brand-rose/20 shadow-lg">
         <CardHeader className="pb-2 pt-8 text-center">
           {/* Logo */}
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-rose to-brand-rose-dark shadow-md">
-            <Sparkles className="h-7 w-7 text-white" />
-          </div>
+          <img src="/logo.png" alt="Bellu" className="mx-auto mb-5 h-14 w-auto" />
 
           <h1 className="font-serif text-2xl font-bold text-brand-text">
             Bellu Admin
           </h1>
           <p className="mt-1 text-sm text-brand-text-secondary">
-            Painel administrativo da plataforma
+            {t('adminPanel.adminUsers.subtitle')}
           </p>
         </CardHeader>
 
@@ -110,7 +110,7 @@ export default function LoginPage() {
 
             {/* Email */}
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('auth.emailPlaceholder')}</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -135,7 +135,7 @@ export default function LoginPage() {
 
             {/* Password */}
             <div className="space-y-1.5">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password">{t('auth.passwordPlaceholder')}</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -167,16 +167,16 @@ export default function LoginPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Entrando...
+                  {t('common.loading')}
                 </>
               ) : (
-                'Entrar'
+                t('auth.login')
               )}
             </Button>
           </form>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            Acesso restrito a administradores autorizados
+            {t('adminPanel.adminUsers.subtitle')}
           </p>
         </CardContent>
       </Card>

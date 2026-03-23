@@ -9,9 +9,11 @@ import { colors, spacing, radii } from '../../theme/colors';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { api, FinanceSummary, Booking } from '../../services/api';
+import { useToast } from '../../components/ui/Toast';
 
 export default function FinancesScreen() {
   const { t } = useTranslation();
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState(0);
   const [weekEarnings, setWeekEarnings] = useState(0);
@@ -82,7 +84,7 @@ export default function FinancesScreen() {
 
       setTransactions(txList);
     } catch (error: any) {
-      Alert.alert(t('common.error'), error?.message || 'Failed to load finances');
+      toast.error(error?.message || t('common.error'));
     } finally {
       setLoading(false);
     }

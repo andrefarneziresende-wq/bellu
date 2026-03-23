@@ -16,7 +16,10 @@ import type {
 } from '@beauty/shared-types';
 import { useAuthStore } from '../stores/authStore';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3333/api';
+import { Platform } from 'react-native';
+
+const DEFAULT_API_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? `http://${DEFAULT_API_HOST}:3333/api`;
 
 async function request<T>(
   endpoint: string,
@@ -113,7 +116,7 @@ export const bookingsApi = {
   getById: (id: string) =>
     request<ApiResponse<Booking>>(`/bookings/${id}`),
 
-  create: (data: { professionalId: string; serviceId: string; date: string; startTime: string }) =>
+  create: (data: { professionalId: string; serviceId: string; date: string; startTime: string; memberId?: string }) =>
     request<ApiResponse<Booking>>('/bookings', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -156,6 +159,12 @@ export const favoritesApi = {
     }),
 };
 
+// --- Members (Staff) ---
+export const membersApi = {
+  listByProfessional: (professionalId: string) =>
+    request<ApiResponse<Array<{ id: string; name: string; avatar: string | null; specialties: string | null; role: string }>>>(`/members?professionalId=${professionalId}`),
+};
+
 // --- Banners ---
 export const bannersApi = {
   list: () => request<ApiResponse<Banner[]>>('/banners'),
@@ -165,4 +174,74 @@ export const bannersApi = {
 export const portfolioApi = {
   getByProfessional: (professionalId: string) =>
     request<ApiResponse<PortfolioItem[]>>(`/professionals/${professionalId}/portfolio`),
+};
+
+// --- Service Packages ---
+export interface ServicePackageData {
+  id: string;
+  name: string;
+  description: string | null;
+  sessionsTotal: number;
+  intervalDays: number | null;
+  priceTotal: number;
+  currency: string;
+  service: { id: string; name: string; durationMinutes: number };
+}
+
+export const servicePackagesApi = {
+  listByProfessional: (professionalId: string) =>
+    request<ApiResponse<ServicePackageData[]>>(`/service-packages?professionalId=${professionalId}`),
+};
+
+// --- Client Packages ---
+export interface ClientPackageData {
+  id: string;
+  totalSessions: number;
+  sessionsUsed: number;
+  status: string;
+  servicePackage: ServicePackageData;
+  professional: { id: string; businessName: string };
+  bookings: Array<{
+    id: string;
+    date: string;
+    startTime: string;
+    status: string;
+    sessionNumber: number | null;
+    completedAt: string | null;
+    _count: { photos: number };
+  }>;
+}
+
+export const clientPackagesApi = {
+  list: (status?: string) => {
+    const query = status ? `?status=${status}` : '';
+    return request<ApiResponse<ClientPackageData[]>>(`/client-packages/my${query}`);
+  },
+
+  getById: (id: string) =>
+    request<ApiResponse<ClientPackageData>>(`/client-packages/${id}`),
+
+  purchase: (data: { servicePackageId: string; sessions?: Array<{ date: string; startTime: string }> }) =>
+    request<ApiResponse<ClientPackageData>>('/client-packages', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+};
+
+// --- Booking Photos ---
+export interface BookingPhotoData {
+  id: string;
+  imageUrl: string;
+  description: string | null;
+  createdAt: string;
+  uploadedBy?: { id: string; name: string };
+  booking?: { id: string; sessionNumber: number | null; date: string; service: { name: string } };
+}
+
+export const bookingPhotosApi = {
+  listByBooking: (bookingId: string) =>
+    request<ApiResponse<BookingPhotoData[]>>(`/booking-photos/${bookingId}`),
+
+  listByPackage: (clientPackageId: string) =>
+    request<ApiResponse<BookingPhotoData[]>>(`/booking-photos/package/${clientPackageId}`),
 };

@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/table';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { useTranslation } from '@/lib/i18n';
 
 interface Banner {
   id: string;
@@ -100,20 +101,18 @@ function bannerToForm(banner: Banner): BannerFormData {
   };
 }
 
-function validateForm(data: BannerFormData): Record<string, string> {
-  const errors: Record<string, string> = {};
-
-  if (!data.imageUrl.trim()) {
-    errors.imageUrl = 'URL da imagem é obrigatória';
-  } else if (!data.imageUrl.startsWith('http')) {
-    errors.imageUrl = 'URL inválida';
+function isValidUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
   }
-
-  return errors;
 }
 
 export default function PromotionsPage() {
   const toast = useToast();
+  const { t } = useTranslation();
 
   const [banners, setBanners] = useState<Banner[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -217,15 +216,37 @@ export default function PromotionsPage() {
     };
   };
 
-  const handleFormSubmit = async () => {
-    const errors = validateForm(formData);
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.imageUrl.trim()) {
+      errors.imageUrl = t('validation.required');
+    } else if (!isValidUrl(formData.imageUrl.trim())) {
+      errors.imageUrl = t('validation.invalidUrl');
     }
 
+    if (formData.order < 0) {
+      errors.order = t('validation.positiveNumber');
+    }
+
+    if (!formData.startDate) {
+      errors.startDate = t('validation.required');
+    }
+
+    if (!formData.endDate) {
+      errors.endDate = t('validation.required');
+    } else if (formData.startDate && formData.endDate < formData.startDate) {
+      errors.endDate = t('validation.dateEndAfterStart');
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleFormSubmit = async () => {
+    if (!validateForm()) return;
+
     setSaving(true);
-    setFormErrors({});
     try {
       const body = buildBody(formData);
       if (isEditing && selectedBanner) {
@@ -456,7 +477,11 @@ export default function PromotionsPage() {
                   onChange={(e) =>
                     handleFormChange('order', parseInt(e.target.value, 10) || 0)
                   }
+                  className={formErrors.order ? 'border-brand-error' : ''}
                 />
+                {formErrors.order && (
+                  <p className="text-xs text-brand-error mt-1">{formErrors.order}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -479,7 +504,7 @@ export default function PromotionsPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="startDate">Data início</Label>
+                <Label htmlFor="startDate">Data início *</Label>
                 <Input
                   id="startDate"
                   type="date"
@@ -487,17 +512,25 @@ export default function PromotionsPage() {
                   onChange={(e) =>
                     handleFormChange('startDate', e.target.value)
                   }
+                  className={formErrors.startDate ? 'border-brand-error' : ''}
                 />
+                {formErrors.startDate && (
+                  <p className="text-xs text-brand-error mt-1">{formErrors.startDate}</p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="endDate">Data fim</Label>
+                <Label htmlFor="endDate">Data fim *</Label>
                 <Input
                   id="endDate"
                   type="date"
                   value={formData.endDate}
                   onChange={(e) => handleFormChange('endDate', e.target.value)}
+                  className={formErrors.endDate ? 'border-brand-error' : ''}
                 />
+                {formErrors.endDate && (
+                  <p className="text-xs text-brand-error mt-1">{formErrors.endDate}</p>
+                )}
               </div>
             </div>
 

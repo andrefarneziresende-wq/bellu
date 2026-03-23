@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, Pencil, Trash2, GripVertical, Loader2, Grid3X3 } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Plus, Pencil, Trash2, GripVertical, Loader2, Grid3X3, Search, type LucideIcon } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { useTranslation } from '@/lib/i18n';
 
 interface CategoryTranslation {
   locale: string;
@@ -56,6 +58,105 @@ const emptyForm: CategoryFormData = {
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+// Curated Lucide icon names organized by beauty/wellness categories
+const ICON_OPTIONS: { group: string; icons: { name: string; label: string }[] }[] = [
+  {
+    group: 'Cabelo',
+    icons: [
+      { name: 'Scissors', label: 'Tesoura' },
+      { name: 'Sparkles', label: 'Brilho' },
+      { name: 'Wind', label: 'Secador' },
+      { name: 'Brush', label: 'Escova' },
+      { name: 'Paintbrush', label: 'Pincel' },
+    ],
+  },
+  {
+    group: 'Unhas & Mãos',
+    icons: [
+      { name: 'Hand', label: 'Mão' },
+      { name: 'Gem', label: 'Gema' },
+      { name: 'Diamond', label: 'Diamante' },
+      { name: 'PaintBucket', label: 'Esmalte' },
+      { name: 'Droplets', label: 'Gotas' },
+    ],
+  },
+  {
+    group: 'Rosto & Pele',
+    icons: [
+      { name: 'Droplet', label: 'Gota' },
+      { name: 'Sun', label: 'Sol' },
+      { name: 'Moon', label: 'Lua' },
+      { name: 'ShieldCheck', label: 'Proteção' },
+      { name: 'FlaskConical', label: 'Tratamento' },
+    ],
+  },
+  {
+    group: 'Olhos & Sobrancelhas',
+    icons: [
+      { name: 'Eye', label: 'Olho' },
+      { name: 'EyeOff', label: 'Cílios' },
+      { name: 'ScanEye', label: 'Design' },
+      { name: 'Focus', label: 'Foco' },
+    ],
+  },
+  {
+    group: 'Maquiagem',
+    icons: [
+      { name: 'Palette', label: 'Paleta' },
+      { name: 'Pipette', label: 'Conta-gotas' },
+      { name: 'Flower2', label: 'Flor' },
+      { name: 'Heart', label: 'Coração' },
+      { name: 'Star', label: 'Estrela' },
+    ],
+  },
+  {
+    group: 'Corpo & Massagem',
+    icons: [
+      { name: 'Activity', label: 'Atividade' },
+      { name: 'Flame', label: 'Calor' },
+      { name: 'Leaf', label: 'Natural' },
+      { name: 'TreePalm', label: 'Relaxamento' },
+      { name: 'Waves', label: 'Ondas' },
+      { name: 'Zap', label: 'Energia' },
+    ],
+  },
+  {
+    group: 'Barbearia',
+    icons: [
+      { name: 'CircleUserRound', label: 'Barbeiro' },
+      { name: 'Crown', label: 'Coroa' },
+      { name: 'BadgeCheck', label: 'Premium' },
+      { name: 'Shirt', label: 'Camisa' },
+    ],
+  },
+  {
+    group: 'Geral',
+    icons: [
+      { name: 'Calendar', label: 'Agenda' },
+      { name: 'Clock', label: 'Relógio' },
+      { name: 'Gift', label: 'Presente' },
+      { name: 'Award', label: 'Prêmio' },
+      { name: 'Ribbon', label: 'Fita' },
+      { name: 'Sparkle', label: 'Brilho' },
+      { name: 'Wand2', label: 'Varinha' },
+      { name: 'CircleDot', label: 'Alvo' },
+    ],
+  },
+];
+
+// Helper to get a Lucide icon component by name
+function getLucideIcon(name: string): LucideIcon | null {
+  const icons = LucideIcons as unknown as Record<string, LucideIcon>;
+  return icons[name] || null;
+}
+
+// Render a Lucide icon from a stored name string
+function IconPreview({ name, size = 20, className = '' }: { name: string; size?: number; className?: string }) {
+  const Icon = getLucideIcon(name);
+  if (!Icon) return <span className={className}>{name}</span>;
+  return <Icon size={size} className={className} />;
+}
+
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +181,7 @@ export default function CategoriesPage() {
   const dragNodeRef = useRef<HTMLTableRowElement | null>(null);
 
   const toast = useToast();
+  const { t } = useTranslation();
 
   const fetchCategories = useCallback(async () => {
     setLoading(true);
@@ -191,21 +293,21 @@ export default function CategoriesPage() {
     const errors: Record<string, string> = {};
 
     if (!formData.slug.trim()) {
-      errors.slug = 'Slug é obrigatório';
+      errors.slug = t('validation.required');
     } else if (!SLUG_REGEX.test(formData.slug)) {
-      errors.slug = 'Slug deve conter apenas letras minúsculas, números e hífens';
+      errors.slug = t('validation.invalidSlug');
     }
 
     if (!formData.icon.trim()) {
-      errors.icon = 'Ícone é obrigatório';
+      errors.icon = t('validation.required');
     }
 
     if (!formData.namePtBR.trim()) {
-      errors.namePtBR = 'Nome em português é obrigatório';
+      errors.namePtBR = t('validation.required');
     }
 
     if (!formData.nameEsES.trim()) {
-      errors.nameEsES = 'Nome em espanhol é obrigatório';
+      errors.nameEsES = t('validation.required');
     }
 
     setFormErrors(errors);
@@ -384,7 +486,9 @@ export default function CategoriesPage() {
                         }`}
                       />
                     </TableCell>
-                    <TableCell className="text-xl">{cat.icon ?? '—'}</TableCell>
+                    <TableCell className="text-xl">
+                      {cat.icon ? <IconPreview name={cat.icon} size={24} /> : '—'}
+                    </TableCell>
                     <TableCell className="font-medium">
                       {getTranslation(cat, 'pt')}
                     </TableCell>
@@ -449,17 +553,62 @@ export default function CategoriesPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="icon">Ícone (emoji)</Label>
-              <Input
-                id="icon"
-                value={formData.icon}
-                onChange={(e) => {
-                  setFormData((prev) => ({ ...prev, icon: e.target.value }));
-                  clearFieldError('icon');
-                }}
-                placeholder="ex: ✂️"
-                className={formErrors.icon ? 'border-brand-error' : ''}
-              />
+              <Label>Ícone</Label>
+              {formData.icon && (
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-rose/10">
+                    <IconPreview name={formData.icon} size={24} className="text-brand-rose" />
+                  </div>
+                  <span className="text-sm text-muted-foreground">{formData.icon}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFormData((prev) => ({ ...prev, icon: '' }))}
+                  >
+                    Limpar
+                  </Button>
+                </div>
+              )}
+              <div className="max-h-52 overflow-y-auto rounded-lg border p-2">
+                {ICON_OPTIONS.map((group) => (
+                  <div key={group.group} className="mb-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5">{group.group}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {group.icons.map((icon) => {
+                        const IconComp = getLucideIcon(icon.name);
+                        if (!IconComp) return null;
+                        return (
+                          <button
+                            key={icon.name}
+                            type="button"
+                            title={`${icon.label} (${icon.name})`}
+                            className={`flex h-10 w-10 items-center justify-center rounded-md transition-colors hover:bg-muted ${
+                              formData.icon === icon.name ? 'bg-brand-rose/20 ring-2 ring-brand-rose' : ''
+                            }`}
+                            onClick={() => {
+                              setFormData((prev) => ({ ...prev, icon: icon.name }));
+                              clearFieldError('icon');
+                            }}
+                          >
+                            <IconComp size={20} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <Input
+                  value={formData.icon}
+                  onChange={(e) => {
+                    setFormData((prev) => ({ ...prev, icon: e.target.value }));
+                    clearFieldError('icon');
+                  }}
+                  placeholder="Ou digite o nome do ícone Lucide..."
+                  className={`flex-1 ${formErrors.icon ? 'border-brand-error' : ''}`}
+                />
+              </div>
               {formErrors.icon && (
                 <p className="text-xs text-brand-error mt-1">{formErrors.icon}</p>
               )}

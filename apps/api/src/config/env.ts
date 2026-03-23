@@ -19,6 +19,14 @@ const envSchema = z.object({
   R2_BUCKET_NAME: z.string().default('bellu-uploads'),
   R2_PUBLIC_URL: z.string().default(''),
 
+  // Notifications
+  RESEND_API_KEY: z.string().default(''),
+  RESEND_FROM_EMAIL: z.string().default('noreply@bellu.com'),
+  TWILIO_ACCOUNT_SID: z.string().default(''),
+  TWILIO_AUTH_TOKEN: z.string().default(''),
+  TWILIO_PHONE_NUMBER: z.string().default(''),
+  TWILIO_WHATSAPP_NUMBER: z.string().default(''),
+
   // Payment gateways (optional in dev)
   STRIPE_SECRET_KEY: z.string().default('sk_test_placeholder'),
   STRIPE_WEBHOOK_SECRET: z.string().default('whsec_placeholder'),

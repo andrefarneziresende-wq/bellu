@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../../config/prisma.js';
 import { env } from '../../config/env.js';
-import { ConflictError, NotFoundError, UnauthorizedError } from '../../shared/errors.js';
+import { ConflictError, UnauthorizedError } from '../../shared/errors.js';
 import type { FastifyInstance } from 'fastify';
 import type { JwtPayload } from '../../shared/auth-middleware.js';
 
@@ -66,14 +66,14 @@ export async function login(data: LoginInput, app: FastifyInstance) {
     where: data.email ? { email: data.email } : { phone: data.phone },
   });
 
-  if (!user) {
-    throw new NotFoundError('User');
+  if (!user || !user.passwordHash) {
+    throw new UnauthorizedError('Invalid email or password');
   }
 
   const validPassword = await bcrypt.compare(data.password, user.passwordHash);
 
   if (!validPassword) {
-    throw new UnauthorizedError('Invalid credentials');
+    throw new UnauthorizedError('Invalid email or password');
   }
 
   const tokens = await generateTokens(user, app);

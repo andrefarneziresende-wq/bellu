@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { toast } from '../../components/ui/Toast';
 import { authApi, countriesApi } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 import type { Country } from '@beauty/shared-types';
@@ -28,12 +29,11 @@ export default function RegisterScreen() {
       try {
         const response = await countriesApi.list();
         setCountries(response.data);
-        // Auto-select first country or match by locale
         const locale = i18n.language;
         const matched = response.data.find((c: Country) => c.locale === locale);
         setSelectedCountry(matched || response.data[0] || null);
       } catch (error: any) {
-        Alert.alert('Error', error.message || 'Failed to load countries');
+        toast(error.message || t('errors.loadError'), 'error');
       }
     };
     fetchCountries();
@@ -41,12 +41,12 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!name || (!email && !phone) || !password) {
-      Alert.alert(t('auth.signup'), t('auth.fillAllFields'));
+      toast(t('auth.fillAllFields'), 'warning');
       return;
     }
 
     if (!selectedCountry) {
-      Alert.alert(t('auth.signup'), 'Please wait for countries to load');
+      toast(t('common.loading'), 'info');
       return;
     }
 
@@ -64,7 +64,7 @@ export default function RegisterScreen() {
       useAuthStore.getState().login(user, tokens);
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert(t('auth.signup'), error.message || t('auth.registerError'));
+      toast(error.message || t('auth.registerError'), 'error');
     } finally {
       setLoading(false);
     }

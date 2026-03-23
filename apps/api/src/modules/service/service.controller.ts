@@ -4,6 +4,18 @@ import { prisma } from '../../config/prisma.js';
 import { NotFoundError } from '../../shared/errors.js';
 import * as serviceService from './service.service.js';
 
+export async function listServiceTemplatesHandler(request: FastifyRequest, reply: FastifyReply) {
+  const templates = await prisma.serviceTemplate.findMany({
+    where: { active: true },
+    orderBy: [{ order: 'asc' }, { name: 'asc' }],
+    include: {
+      category: { include: { translations: true } },
+    },
+  });
+
+  return reply.status(200).send({ success: true, data: templates });
+}
+
 export async function createHandler(request: FastifyRequest, reply: FastifyReply) {
   const body = createServiceSchema.parse(request.body);
 
@@ -20,6 +32,23 @@ export async function createHandler(request: FastifyRequest, reply: FastifyReply
   return reply.status(201).send({
     success: true,
     data: service,
+  });
+}
+
+export async function listMyServicesHandler(request: FastifyRequest, reply: FastifyReply) {
+  const professional = await prisma.professional.findUnique({
+    where: { userId: request.user.userId },
+  });
+
+  if (!professional) {
+    throw new NotFoundError('Professional profile');
+  }
+
+  const services = await serviceService.getServicesByProfessional(professional.id);
+
+  return reply.status(200).send({
+    success: true,
+    data: services,
   });
 }
 

@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import bcrypt from 'bcryptjs';
 import { prisma } from '../../config/prisma.js';
 import * as adminAuthService from './admin-auth.service.js';
 
@@ -57,13 +58,19 @@ export async function listUsersHandler(request: FastifyRequest, reply: FastifyRe
   const { page, perPage } = paginationSchema.parse(request.query);
   const skip = (page - 1) * perPage;
 
+  // Only show app-registered clients (users without a professional profile)
+  const where = {
+    professional: null,
+  };
+
   const [users, total] = await Promise.all([
     prisma.user.findMany({
+      where,
       skip,
       take: perPage,
       orderBy: { createdAt: 'desc' },
     }),
-    prisma.user.count(),
+    prisma.user.count({ where }),
   ]);
 
   return reply.status(200).send({
@@ -440,6 +447,93 @@ export async function reorderCategoryHandler(
   return reply.status(200).send({ success: true, data: updated });
 }
 
+// ============================================================
+// Service Templates (Admin catalog)
+// ============================================================
+
+export async function listServiceTemplatesHandler(request: FastifyRequest, reply: FastifyReply) {
+  const templates = await prisma.serviceTemplate.findMany({
+    orderBy: [{ order: 'asc' }, { name: 'asc' }],
+    include: {
+      category: { include: { translations: true } },
+      _count: { select: { services: true } },
+    },
+  });
+
+  return reply.status(200).send({ success: true, data: templates });
+}
+
+export async function createServiceTemplateHandler(request: FastifyRequest, reply: FastifyReply) {
+  const body = request.body as { name: string; categoryId: string; order?: number };
+
+  if (!body.name || !body.categoryId) {
+    return reply.status(400).send({ success: false, error: 'Name and categoryId are required' });
+  }
+
+  const template = await prisma.serviceTemplate.create({
+    data: {
+      name: body.name,
+      categoryId: body.categoryId,
+      order: body.order ?? 0,
+    },
+    include: {
+      category: { include: { translations: true } },
+    },
+  });
+
+  return reply.status(201).send({ success: true, data: template });
+}
+
+export async function updateServiceTemplateHandler(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  const { id } = request.params;
+  const body = request.body as { name?: string; categoryId?: string; active?: boolean; order?: number };
+
+  const existing = await prisma.serviceTemplate.findUnique({ where: { id } });
+  if (!existing) return reply.status(404).send({ success: false, error: 'Template not found' });
+
+  const updateData: Record<string, unknown> = {};
+  if (body.name !== undefined) updateData.name = body.name;
+  if (body.categoryId !== undefined) updateData.categoryId = body.categoryId;
+  if (body.active !== undefined) updateData.active = body.active;
+  if (body.order !== undefined) updateData.order = body.order;
+
+  const updated = await prisma.serviceTemplate.update({
+    where: { id },
+    data: updateData,
+    include: {
+      category: { include: { translations: true } },
+    },
+  });
+
+  return reply.status(200).send({ success: true, data: updated });
+}
+
+export async function deleteServiceTemplateHandler(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  const { id } = request.params;
+
+  const existing = await prisma.serviceTemplate.findUnique({
+    where: { id },
+    include: { _count: { select: { services: true } } },
+  });
+  if (!existing) return reply.status(404).send({ success: false, error: 'Template not found' });
+
+  if (existing._count.services > 0) {
+    return reply.status(400).send({
+      success: false,
+      error: `Cannot delete: ${existing._count.services} professionals are using this service`,
+    });
+  }
+
+  await prisma.serviceTemplate.delete({ where: { id } });
+  return reply.status(200).send({ success: true, data: null });
+}
+
 export async function listServicesHandler(request: FastifyRequest, reply: FastifyReply) {
   const { page, perPage } = paginationSchema.parse(request.query);
   const skip = (page - 1) * perPage;
@@ -462,4 +556,77 @@ export async function listServicesHandler(request: FastifyRequest, reply: Fastif
     data: services,
     meta: { page, perPage, total, totalPages: Math.ceil(total / perPage) },
   });
+}
+
+export async function createAdminUserHandler(request: FastifyRequest, reply: FastifyReply) {
+  const body = request.body as {
+    name: string;
+    email: string;
+    password: string;
+    role?: string;
+    countryId?: string;
+    active?: boolean;
+  };
+
+  const passwordHash = await bcrypt.hash(body.password, 10);
+
+  const admin = await prisma.adminUser.create({
+    data: {
+      name: body.name,
+      email: body.email,
+      passwordHash,
+      role: body.role || 'ADMIN',
+      countryId: body.countryId || null,
+      active: body.active ?? true,
+    },
+  });
+
+  const { passwordHash: _, ...adminWithoutPassword } = admin;
+  return reply.status(201).send({ success: true, data: adminWithoutPassword });
+}
+
+export async function updateAdminUserHandler(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  const { id } = request.params;
+  const body = request.body as {
+    name?: string;
+    email?: string;
+    password?: string;
+    role?: string;
+    countryId?: string;
+    active?: boolean;
+  };
+
+  const existing = await prisma.adminUser.findUnique({ where: { id } });
+  if (!existing) return reply.status(404).send({ success: false, error: 'Admin user not found' });
+
+  const updateData: Record<string, unknown> = {};
+  if (body.name !== undefined) updateData.name = body.name;
+  if (body.email !== undefined) updateData.email = body.email;
+  if (body.password !== undefined) updateData.passwordHash = await bcrypt.hash(body.password, 10);
+  if (body.role !== undefined) updateData.role = body.role;
+  if (body.countryId !== undefined) updateData.countryId = body.countryId || null;
+  if (body.active !== undefined) updateData.active = body.active;
+
+  const admin = await prisma.adminUser.update({
+    where: { id },
+    data: updateData,
+  });
+
+  const { passwordHash: _, ...adminWithoutPassword } = admin;
+  return reply.status(200).send({ success: true, data: adminWithoutPassword });
+}
+
+export async function deleteAdminUserHandler(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  const { id } = request.params;
+  const existing = await prisma.adminUser.findUnique({ where: { id } });
+  if (!existing) return reply.status(404).send({ success: false, error: 'Admin user not found' });
+
+  await prisma.adminUser.delete({ where: { id } });
+  return reply.status(200).send({ success: true, data: null });
 }

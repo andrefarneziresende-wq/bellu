@@ -9,17 +9,19 @@ import { colors, spacing, radii } from '../../theme/colors';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useAuthStore } from '../../stores/authStore';
+import { useToast } from '../../components/ui/Toast';
 
 export default function LoginScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const toast = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login, isLoading } = useAuthStore();
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert(t('common.error'), t('auth.fillAllFields'));
+      toast.error(t('auth.fillAllFields'));
       return;
     }
 
@@ -27,10 +29,7 @@ export default function LoginScreen() {
       await login(email.trim(), password);
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert(
-        t('common.error'),
-        error?.message || t('auth.loginError'),
-      );
+      toast.error(error?.message || t('auth.loginError'));
     }
   };
 

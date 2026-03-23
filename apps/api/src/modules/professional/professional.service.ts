@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma.js';
 import { ConflictError, ForbiddenError, NotFoundError } from '../../shared/errors.js';
+import { geocodeAddress } from '../geocoding/geocoding.service.js';
 
 interface CreateProfessionalData {
   businessName: string;
@@ -46,14 +47,24 @@ export async function createProfessional(userId: string, data: CreateProfessiona
     throw new ConflictError('User already has a professional profile');
   }
 
+  // Auto-geocode if coordinates not provided
+  let { latitude, longitude } = data;
+  if ((!latitude || !longitude) && data.address) {
+    const geo = await geocodeAddress(data.address);
+    if (geo) {
+      latitude = geo.latitude;
+      longitude = geo.longitude;
+    }
+  }
+
   return prisma.professional.create({
     data: {
       userId,
       businessName: data.businessName,
       description: data.description,
       address: data.address,
-      latitude: data.latitude,
-      longitude: data.longitude,
+      latitude: latitude || 0,
+      longitude: longitude || 0,
       taxId: data.taxId,
       countryId: data.countryId,
     },
@@ -112,6 +123,15 @@ export async function updateProfessional(id: string, userId: string, data: Updat
 
   if (professional.userId !== userId) {
     throw new ForbiddenError('You can only update your own professional profile');
+  }
+
+  // Auto-geocode if address changed but no coordinates provided
+  if (data.address && !data.latitude && !data.longitude) {
+    const geo = await geocodeAddress(data.address);
+    if (geo) {
+      data.latitude = geo.latitude;
+      data.longitude = geo.longitude;
+    }
   }
 
   return prisma.professional.update({

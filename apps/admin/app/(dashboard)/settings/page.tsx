@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/toast';
 import { apiFetch } from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 
 interface ConfigItem {
   id: string;
@@ -28,6 +29,7 @@ interface FieldErrors {
 
 export default function SettingsPage() {
   const toast = useToast();
+  const { t } = useTranslation();
 
   // Commission
   const [commissionBr, setCommissionBr] = useState('');
@@ -120,10 +122,10 @@ export default function SettingsPage() {
   const handleSaveRates = () => {
     const newErrors: FieldErrors = {};
     if (!validateRange(commissionBr, 0, 100)) {
-      newErrors.commissionBr = 'Valor deve ser entre 0 e 100';
+      newErrors.commissionBr = t('validation.rangeValue', { min: '0', max: '100' });
     }
     if (!validateRange(commissionEs, 0, 100)) {
-      newErrors.commissionEs = 'Valor deve ser entre 0 e 100';
+      newErrors.commissionEs = t('validation.rangeValue', { min: '0', max: '100' });
     }
     setErrors((prev) => ({ ...prev, commissionBr: newErrors.commissionBr, commissionEs: newErrors.commissionEs }));
     if (newErrors.commissionBr || newErrors.commissionEs) return;
@@ -137,10 +139,10 @@ export default function SettingsPage() {
   const handleSaveCancel = () => {
     const newErrors: FieldErrors = {};
     if (!validateRange(cancelHoursBr, 0, 48)) {
-      newErrors.cancelHoursBr = 'Valor deve ser entre 0 e 48';
+      newErrors.cancelHoursBr = t('validation.rangeValue', { min: '0', max: '48' });
     }
     if (!validateRange(cancelHoursEs, 0, 48)) {
-      newErrors.cancelHoursEs = 'Valor deve ser entre 0 e 48';
+      newErrors.cancelHoursEs = t('validation.rangeValue', { min: '0', max: '48' });
     }
     setErrors((prev) => ({ ...prev, cancelHoursBr: newErrors.cancelHoursBr, cancelHoursEs: newErrors.cancelHoursEs }));
     if (newErrors.cancelHoursBr || newErrors.cancelHoursEs) return;
@@ -202,10 +204,10 @@ export default function SettingsPage() {
                 }}
                 min="0"
                 max="100"
-                className="mt-1"
+                className={`mt-1 ${errors.commissionBr ? 'border-brand-error' : ''}`}
               />
               {errors.commissionBr && (
-                <p className="mt-1 text-xs text-destructive">{errors.commissionBr}</p>
+                <p className="mt-1 text-xs text-brand-error">{errors.commissionBr}</p>
               )}
             </div>
             <div>
@@ -220,10 +222,10 @@ export default function SettingsPage() {
                 }}
                 min="0"
                 max="100"
-                className="mt-1"
+                className={`mt-1 ${errors.commissionEs ? 'border-brand-error' : ''}`}
               />
               {errors.commissionEs && (
-                <p className="mt-1 text-xs text-destructive">{errors.commissionEs}</p>
+                <p className="mt-1 text-xs text-brand-error">{errors.commissionEs}</p>
               )}
             </div>
             <Button onClick={handleSaveRates} disabled={saving === 'rates'}>
@@ -261,10 +263,10 @@ export default function SettingsPage() {
                 }}
                 min="0"
                 max="48"
-                className="mt-1"
+                className={`mt-1 ${errors.cancelHoursBr ? 'border-brand-error' : ''}`}
               />
               {errors.cancelHoursBr && (
-                <p className="mt-1 text-xs text-destructive">{errors.cancelHoursBr}</p>
+                <p className="mt-1 text-xs text-brand-error">{errors.cancelHoursBr}</p>
               )}
             </div>
             <div>
@@ -279,10 +281,10 @@ export default function SettingsPage() {
                 }}
                 min="0"
                 max="48"
-                className="mt-1"
+                className={`mt-1 ${errors.cancelHoursEs ? 'border-brand-error' : ''}`}
               />
               {errors.cancelHoursEs && (
-                <p className="mt-1 text-xs text-destructive">{errors.cancelHoursEs}</p>
+                <p className="mt-1 text-xs text-brand-error">{errors.cancelHoursEs}</p>
               )}
             </div>
             <Button onClick={handleSaveCancel} disabled={saving === 'cancel'}>
