@@ -135,23 +135,58 @@ export default function SearchScreen() {
     setNearbyLoading(true);
     Keyboard.dismiss();
     try {
-      // Use Geocoding API with place_id (more reliable than Place Details)
-      const url = `https://maps.googleapis.com/maps/api/geocode/json?place_id=${placeId}&key=${GOOGLE_MAPS_API_KEY}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const loc = data.results?.[0]?.geometry?.location;
-      if (loc) {
+      let lat: number | null = null;
+      let lng: number | null = null;
+
+      // Try Geocoding API with place_id first
+      try {
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?place_id=${placeId}&key=${GOOGLE_MAPS_API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const loc = data.results?.[0]?.geometry?.location;
+        if (loc) {
+          lat = loc.lat;
+          lng = loc.lng;
+        }
+      } catch (_) {}
+
+      // Fallback: try geocoding with address text
+      if (lat === null || lng === null) {
+        try {
+          const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(description)}&key=${GOOGLE_MAPS_API_KEY}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          const loc = data.results?.[0]?.geometry?.location;
+          if (loc) {
+            lat = loc.lat;
+            lng = loc.lng;
+          }
+        } catch (_) {}
+      }
+
+      // Fallback 2: use expo-location geocoding
+      if (lat === null || lng === null) {
+        try {
+          const geocoded = await Location.geocodeAsync(description);
+          if (geocoded.length > 0) {
+            lat = geocoded[0].latitude;
+            lng = geocoded[0].longitude;
+          }
+        } catch (_) {}
+      }
+
+      if (lat !== null && lng !== null) {
         const newRegion: Region = {
-          latitude: loc.lat,
-          longitude: loc.lng,
+          latitude: lat,
+          longitude: lng,
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         };
         setRegion(newRegion);
         mapRef.current?.animateToRegion(newRegion, 500);
         const profRes = await professionalsApi.list({
-          lat: loc.lat,
-          lng: loc.lng,
+          lat,
+          lng,
           ...(activeFilter ? { categoryId: activeFilter } : {}),
         });
         setNearbyResults(profRes.data);
