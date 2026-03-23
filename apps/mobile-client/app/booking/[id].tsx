@@ -66,17 +66,19 @@ export default function BookingScreen() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [profRes, servRes, membRes] = await Promise.all([
-          professionalsApi.getById(id),
+        const profRes = await professionalsApi.getById(id);
+        setProfessional(profRes.data);
+
+        const [servRes, membRes] = await Promise.allSettled([
           servicesApi.getByProfessional(id),
           membersApi.listByProfessional(id),
         ]);
-        setProfessional(profRes.data);
-        setServices(servRes.data);
-        if (servRes.data.length > 0) {
-          setSelectedService(servRes.data[0]);
+        const servData = servRes.status === 'fulfilled' ? servRes.value.data : [];
+        setServices(servData);
+        if (servData.length > 0) {
+          setSelectedService(servData[0]);
         }
-        setMembers(membRes.data || []);
+        setMembers(membRes.status === 'fulfilled' ? (membRes.value.data || []) : []);
       } catch (error: any) {
         toast(error.message || t('common.error'), 'error');
       } finally {
@@ -154,7 +156,7 @@ export default function BookingScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* Service Selection */}
-        {services.length > 1 && (
+        {services.length > 0 && (
           <Animated.View entering={FadeInDown.delay(50)}>
             <Text style={styles.sectionTitle}>{t('professional.services')}</Text>
             {services.map((service) => (

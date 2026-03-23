@@ -123,7 +123,7 @@ export const professionalsApi = {
 // --- Services ---
 export const servicesApi = {
   getByProfessional: (professionalId: string) =>
-    request<ApiResponse<Service[]>>(`/professionals/${professionalId}/services`),
+    request<ApiResponse<Service[]>>(`/services/professional/${professionalId}`),
 };
 
 // --- Categories ---
@@ -164,7 +164,7 @@ export const bookingsApi = {
 // --- Reviews ---
 export const reviewsApi = {
   getByProfessional: (professionalId: string) =>
-    request<PaginatedResponse<Review>>(`/professionals/${professionalId}/reviews`),
+    request<PaginatedResponse<Review>>(`/reviews/professional/${professionalId}`),
 
   create: (data: { bookingId: string; rating: number; comment?: string }) =>
     request<ApiResponse<Review>>('/reviews', {
@@ -203,7 +203,7 @@ export const bannersApi = {
 // --- Portfolio ---
 export const portfolioApi = {
   getByProfessional: (professionalId: string) =>
-    request<ApiResponse<PortfolioItem[]>>(`/professionals/${professionalId}/portfolio`),
+    request<ApiResponse<PortfolioItem[]>>(`/portfolio?professionalId=${professionalId}`),
 };
 
 // --- Service Packages ---

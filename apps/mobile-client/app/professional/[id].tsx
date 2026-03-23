@@ -62,6 +62,19 @@ export default function ProfessionalScreen() {
     { key: 'about', label: t('professional.about') },
   ];
 
+  // Check if professional is currently open based on workingHours
+  const isOpenNow = (() => {
+    if (!professional?.workingHours || professional.workingHours.length === 0) return false;
+    const now = new Date();
+    const currentDay = now.getDay(); // 0=Sun, 1=Mon, etc.
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const todayHours = (professional.workingHours as any[]).find(
+      (wh: any) => wh.dayOfWeek === currentDay && wh.isOpen !== false,
+    );
+    if (!todayHours) return false;
+    return currentTime >= todayHours.openTime && currentTime <= todayHours.closeTime;
+  })();
+
   const formatPrice = (price: number, currency: string) => {
     if (currency === 'BRL') return `R$ ${price.toFixed(2).replace('.', ',')}`;
     if (currency === 'EUR') return `${price.toFixed(2).replace('.', ',')} \u20AC`;
@@ -89,11 +102,17 @@ export default function ProfessionalScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Cover Image */}
         <Animated.View entering={FadeIn}>
-          <Image
-            source={{ uri: professional.coverPhoto || 'https://picsum.photos/seed/cover1/800/400' }}
-            style={styles.coverImage}
-            contentFit="cover"
-          />
+          {professional.coverPhoto ? (
+            <Image
+              source={{ uri: professional.coverPhoto }}
+              style={styles.coverImage}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.coverImage, styles.coverPlaceholder]}>
+              <Ionicons name="image-outline" size={48} color={colors.border} />
+            </View>
+          )}
           <SafeAreaView style={styles.backBtn} edges={['top']}>
             <Pressable onPress={() => router.back()} style={styles.backCircle}>
               <Ionicons name="arrow-back" size={22} color={colors.text} />
@@ -103,11 +122,17 @@ export default function ProfessionalScreen() {
 
         {/* Profile Info */}
         <Animated.View entering={FadeInDown.delay(100)} style={styles.profileSection}>
-          <Image
-            source={{ uri: professional.avatarPhoto || 'https://picsum.photos/seed/avatar1/200/200' }}
-            style={styles.avatar}
-            contentFit="cover"
-          />
+          {professional.avatarPhoto ? (
+            <Image
+              source={{ uri: professional.avatarPhoto }}
+              style={styles.avatar}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Ionicons name="person" size={36} color={colors.white} />
+            </View>
+          )}
           <View style={styles.profileInfo}>
             <View style={styles.nameRow}>
               <Text style={styles.businessName}>{professional.businessName}</Text>
@@ -123,7 +148,8 @@ export default function ProfessionalScreen() {
               <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
               <Text style={styles.metaText}>{professional.address}</Text>
             </View>
-            {professional.active && <Badge label={t('professional.openNow')} variant="success" />}
+            {isOpenNow && <Badge label={t('professional.openNow')} variant="success" />}
+            {!isOpenNow && professional.active && <Badge label={t('professional.closedNow')} variant="default" />}
           </View>
         </Animated.View>
 
@@ -226,10 +252,12 @@ export default function ProfessionalScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   coverImage: { width: '100%', height: 220 },
+  coverPlaceholder: { backgroundColor: colors.borderLight || '#F0F0F0', justifyContent: 'center', alignItems: 'center' },
   backBtn: { position: 'absolute', top: 0, left: spacing.lg },
   backCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.white, justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: colors.shadowDark, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 6 },
   profileSection: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: -30 },
   avatar: { width: 80, height: 80, borderRadius: radii.xl, borderWidth: 3, borderColor: colors.white },
+  avatarPlaceholder: { backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
   profileInfo: { flex: 1, marginLeft: spacing.md, marginTop: 34, gap: 4 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   businessName: { fontSize: typography.sizes.xl, fontWeight: typography.weights.bold, color: colors.text },
