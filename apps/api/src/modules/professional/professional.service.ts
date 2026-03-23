@@ -216,22 +216,45 @@ export async function searchProfessionals(filters: SearchFilters) {
 
     const dataQuery = `
       SELECT
-        p.*,
-        u.name AS user_name,
-        u.avatar AS user_avatar,
-        (${distanceExpr}) AS distance_meters
+        p.id,
+        p.business_name AS "businessName",
+        p.description,
+        p.address,
+        p.latitude,
+        p.longitude,
+        p.cover_photo AS "coverPhoto",
+        p.avatar_photo AS "avatarPhoto",
+        p.rating,
+        p.total_reviews AS "totalReviews",
+        p.verified,
+        p.active,
+        p.status,
+        p.tax_id AS "taxId",
+        p.user_id AS "userId",
+        p.country_id AS "countryId",
+        p.created_at AS "createdAt",
+        p.updated_at AS "updatedAt",
+        u.name AS "userName",
+        u.avatar AS "userAvatar",
+        (${distanceExpr}) AS "distanceMeters"
       FROM professionals p
       JOIN users u ON u.id = p.user_id
       WHERE ${whereClause}
-      ORDER BY distance_meters ASC
+      ORDER BY "distanceMeters" ASC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
     params.push(perPage, offset);
 
-    const [countResult, data] = await Promise.all([
+    const [countResult, rawData] = await Promise.all([
       prisma.$queryRawUnsafe<[{ total: number }]>(countQuery, ...params.slice(0, -2)),
-      prisma.$queryRawUnsafe<unknown[]>(dataQuery, ...params),
+      prisma.$queryRawUnsafe<any[]>(dataQuery, ...params),
     ]);
+
+    // Shape data to match Prisma output format
+    const data = rawData.map((row) => ({
+      ...row,
+      user: { name: row.userName, avatar: row.userAvatar },
+    }));
 
     const total = countResult[0]?.total ?? 0;
     const totalPages = Math.ceil(total / perPage);

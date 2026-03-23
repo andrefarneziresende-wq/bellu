@@ -100,10 +100,10 @@ export default function SearchScreen() {
     getLocation();
   }, []);
 
-  // Google Places Autocomplete
+  // Google Places Autocomplete (works in both list and map mode)
   useEffect(() => {
-    if (!showMap) return;
-    if (addressQuery.trim().length < 3) {
+    const currentQuery = showMap ? addressQuery : query;
+    if (currentQuery.trim().length < 3) {
       setPlacePredictions([]);
       setShowPredictions(false);
       return;
@@ -113,7 +113,7 @@ export default function SearchScreen() {
         const locationBias = userLocation
           ? `&location=${userLocation.lat},${userLocation.lng}&radius=50000`
           : '';
-        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(addressQuery.trim())}&key=${GOOGLE_MAPS_API_KEY}&language=pt-BR${locationBias}`;
+        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(currentQuery.trim())}&key=${GOOGLE_MAPS_API_KEY}&language=pt-BR${locationBias}`;
         const res = await fetch(url);
         const data = await res.json();
         if (data.predictions) {
@@ -125,32 +125,40 @@ export default function SearchScreen() {
       }
     }, 400);
     return () => clearTimeout(timeout);
-  }, [addressQuery, showMap, userLocation]);
+  }, [addressQuery, query, showMap, userLocation]);
 
-  // Select a place from autocomplete
+  // Select a place from autocomplete (works in both list and map mode)
   const handleSelectPlace = useCallback(async (placeId: string, description: string) => {
-    setAddressQuery(description);
+    if (showMap) {
+      setAddressQuery(description);
+    } else {
+      setQuery(description);
+    }
     setShowPredictions(false);
     setPlacePredictions([]);
-    setNearbyLoading(true);
     Keyboard.dismiss();
+
+    const setLoadingState = showMap ? setNearbyLoading : setLoading;
+    setLoadingState(true);
+    if (!showMap) setSearched(true);
+
     try {
       let lat: number | null = null;
       let lng: number | null = null;
 
-      // Try Places API findplacefromtext (uses same API as autocomplete which works)
+      // Try Geocoding API first (most reliable for addresses)
       try {
-        const url = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(description)}&inputtype=textquery&fields=geometry&key=${GOOGLE_MAPS_API_KEY}`;
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?place_id=${placeId}&key=${GOOGLE_MAPS_API_KEY}`;
         const res = await fetch(url);
         const data = await res.json();
-        const loc = data.candidates?.[0]?.geometry?.location;
+        const loc = data.results?.[0]?.geometry?.location;
         if (loc) {
           lat = loc.lat;
           lng = loc.lng;
         }
       } catch (_) {}
 
-      // Fallback: Place Details API with place_id
+      // Fallback: Place Details API
       if (lat === null || lng === null) {
         try {
           const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry&key=${GOOGLE_MAPS_API_KEY}`;
@@ -164,13 +172,13 @@ export default function SearchScreen() {
         } catch (_) {}
       }
 
-      // Fallback 2: Geocoding API
+      // Fallback 2: Find Place from Text
       if (lat === null || lng === null) {
         try {
-          const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(description)}&key=${GOOGLE_MAPS_API_KEY}`;
+          const url = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(description)}&inputtype=textquery&fields=geometry&key=${GOOGLE_MAPS_API_KEY}`;
           const res = await fetch(url);
           const data = await res.json();
-          const loc = data.results?.[0]?.geometry?.location;
+          const loc = data.candidates?.[0]?.geometry?.location;
           if (loc) {
             lat = loc.lat;
             lng = loc.lng;
@@ -190,33 +198,44 @@ export default function SearchScreen() {
       }
 
       if (lat !== null && lng !== null) {
-        const newRegion: Region = {
-          latitude: lat,
-          longitude: lng,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        };
-        setRegion(newRegion);
-        mapRef.current?.animateToRegion(newRegion, 500);
+        // Fetch professionals near this location
         const profRes = await professionalsApi.list({
           lat,
           lng,
           ...(activeFilter ? { categoryId: activeFilter } : {}),
         });
-        setNearbyResults(profRes.data);
+
+        if (showMap) {
+          const newRegion: Region = {
+            latitude: lat,
+            longitude: lng,
+            latitudeDelta: 0.03,
+            longitudeDelta: 0.03,
+          };
+          setRegion(newRegion);
+          mapRef.current?.animateToRegion(newRegion, 500);
+          setNearbyResults(profRes.data);
+        } else {
+          // In list mode, show the results from geo search
+          setResults(profRes.data);
+          // Update user location reference for distance calc
+          setUserLocation({ lat, lng });
+        }
       } else {
         toast(t('search.addressNotFound'), 'warning');
       }
     } catch (_) {
       toast(t('search.addressNotFound'), 'warning');
     } finally {
-      setNearbyLoading(false);
+      setLoadingState(false);
     }
-  }, [activeFilter, t]);
+  }, [activeFilter, t, showMap]);
 
   // Text search with debounce (name mode, list view)
+  // Only triggers text search if predictions are NOT showing (user hasn't selected an address)
   useEffect(() => {
     if (showMap) return;
+    if (showPredictions) return; // Don't text-search while showing address suggestions
     const searchTimeout = setTimeout(async () => {
       if (query.trim().length < 2) {
         if (query.trim().length === 0) {
@@ -239,7 +258,7 @@ export default function SearchScreen() {
     }, 500);
 
     return () => clearTimeout(searchTimeout);
-  }, [query, showMap]);
+  }, [query, showMap, showPredictions]);
 
   // Fetch nearby when map region changes
   useEffect(() => {
@@ -362,7 +381,7 @@ export default function SearchScreen() {
       </View>
 
       {/* Place Autocomplete Suggestions */}
-      {showMap && showPredictions && placePredictions.length > 0 && (
+      {showPredictions && placePredictions.length > 0 && (
         <View style={styles.predictionsContainer}>
           {placePredictions.map((prediction) => (
             <Pressable
@@ -605,7 +624,7 @@ const styles = StyleSheet.create({
   markerContainer: { alignItems: 'center' },
   marker: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.white },
   markerTail: { width: 0, height: 0, borderLeftWidth: 6, borderRightWidth: 6, borderTopWidth: 8, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: colors.primary, marginTop: -2 },
-  mapCardList: { position: 'absolute', bottom: 20, left: 0, right: 0 },
+  mapCardList: { position: 'absolute', bottom: 40, left: 0, right: 0 },
   mapCard: { width: 260, backgroundColor: colors.white, borderRadius: radii.lg, marginRight: spacing.md, flexDirection: 'row', overflow: 'hidden', elevation: 4, shadowColor: colors.shadowDark, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
   mapCardImage: { width: 80, height: 80 },
   mapCardInfo: { flex: 1, padding: spacing.sm, justifyContent: 'center' },
