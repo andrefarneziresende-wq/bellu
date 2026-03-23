@@ -33,11 +33,17 @@ interface Country {
   code: string;
 }
 
+interface AdminStaffRole {
+  id: string;
+  name: string;
+}
+
 interface AdminUser {
   id: string;
   name: string;
   email: string;
-  role: string;
+  roleId: string | null;
+  staffRole: AdminStaffRole | null;
   active: boolean;
   createdAt: string;
   country: Country | null;
@@ -48,7 +54,7 @@ interface AdminUserFormData {
   name: string;
   email: string;
   password: string;
-  role: string;
+  roleId: string;
   countryId: string;
 }
 
@@ -56,13 +62,14 @@ const emptyForm: AdminUserFormData = {
   name: '',
   email: '',
   password: '',
-  role: 'ADMIN',
+  roleId: '',
   countryId: '',
 };
 
 export default function AdminUsersPage() {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
+  const [roles, setRoles] = useState<AdminStaffRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,21 +87,6 @@ export default function AdminUsersPage() {
 
   const toast = useToast();
   const { t, locale } = useTranslation();
-
-  const roleConfig: Record<string, { label: string; className: string }> = {
-    SUPERADMIN: {
-      label: t('adminPanel.adminUsers.superAdmin'),
-      className: 'bg-red-500 text-white border-transparent',
-    },
-    ADMIN: {
-      label: t('adminPanel.adminUsers.admin'),
-      className: 'bg-blue-500 text-white border-transparent',
-    },
-    MODERATOR: {
-      label: t('adminPanel.adminUsers.moderator'),
-      className: 'bg-gray-500 text-white border-transparent',
-    },
-  };
 
   const fetchAdminUsers = useCallback(async () => {
     setLoading(true);
@@ -118,10 +110,20 @@ export default function AdminUsersPage() {
     }
   }, []);
 
+  const fetchRoles = useCallback(async () => {
+    try {
+      const res = await apiFetch<{ data: AdminStaffRole[] }>('/api/admin/admin-roles');
+      setRoles(res.data || []);
+    } catch {
+      setRoles([]);
+    }
+  }, []);
+
   useEffect(() => {
     fetchAdminUsers();
     fetchCountries();
-  }, [fetchAdminUsers, fetchCountries]);
+    fetchRoles();
+  }, [fetchAdminUsers, fetchCountries, fetchRoles]);
 
   const formatDate = (dateStr: string) => {
     try {
@@ -154,10 +156,6 @@ export default function AdminUsersPage() {
       errors.password = t('validation.minLength', { min: '4' });
     }
 
-    if (!formData.role) {
-      errors.role = t('validation.required');
-    }
-
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -186,7 +184,7 @@ export default function AdminUsersPage() {
       name: user.name,
       email: user.email,
       password: '',
-      role: user.role,
+      roleId: user.roleId ?? '',
       countryId: user.countryId ?? '',
     });
     setFormErrors({});
@@ -201,7 +199,7 @@ export default function AdminUsersPage() {
       const body: Record<string, unknown> = {
         name: formData.name,
         email: formData.email,
-        role: formData.role,
+        roleId: formData.roleId || null,
         countryId: formData.countryId || null,
       };
 
@@ -310,52 +308,52 @@ export default function AdminUsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {adminUsers.map((user) => {
-                  const role = roleConfig[user.role] ?? {
-                    label: user.role,
-                    className: 'bg-gray-500 text-white border-transparent',
-                  };
-                  return (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {user.email}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={role.className}>{role.label}</Badge>
-                      </TableCell>
-                      <TableCell>{user.country?.name ?? '—'}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.active ? 'success' : 'secondary'}>
-                          {user.active ? t('adminPanel.adminUsers.active') : t('adminPanel.adminUsers.inactive')}
+                {adminUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {user.email}
+                    </TableCell>
+                    <TableCell>
+                      {user.staffRole ? (
+                        <Badge className="bg-brand-rose text-white border-transparent">
+                          {user.staffRole.name}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatDate(user.createdAt)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title={t('common.edit')}
-                            onClick={() => openEditDialog(user)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title={t('common.delete')}
-                            onClick={() => openDeleteDialog(user)}
-                          >
-                            <Trash2 className="h-4 w-4 text-brand-error" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                      ) : (
+                        <Badge variant="secondary">{t('adminPanel.adminUsers.noRole')}</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>{user.country?.name ?? '—'}</TableCell>
+                    <TableCell>
+                      <Badge variant={user.active ? 'success' : 'secondary'}>
+                        {user.active ? t('adminPanel.adminUsers.active') : t('adminPanel.adminUsers.inactive')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDate(user.createdAt)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title={t('common.edit')}
+                          onClick={() => openEditDialog(user)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title={t('common.delete')}
+                          onClick={() => openDeleteDialog(user)}
+                        >
+                          <Trash2 className="h-4 w-4 text-brand-error" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}
@@ -428,23 +426,21 @@ export default function AdminUsersPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role">{t('adminPanel.adminUsers.role')}</Label>
+              <Label htmlFor="roleId">{t('adminPanel.adminUsers.role')}</Label>
               <Select
-                id="role"
-                value={formData.role}
-                onChange={(e) => {
-                  setFormData((prev) => ({ ...prev, role: e.target.value }));
-                  clearFieldError('role');
-                }}
-                className={formErrors.role ? 'border-brand-error' : ''}
+                id="roleId"
+                value={formData.roleId}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, roleId: e.target.value }))
+                }
               >
-                <option value="SUPERADMIN">{t('adminPanel.adminUsers.superAdmin')}</option>
-                <option value="ADMIN">{t('adminPanel.adminUsers.admin')}</option>
-                <option value="MODERATOR">{t('adminPanel.adminUsers.moderator')}</option>
+                <option value="">{t('adminPanel.adminUsers.noRole')}</option>
+                {roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))}
               </Select>
-              {formErrors.role && (
-                <p className="text-xs text-brand-error mt-1">{formErrors.role}</p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -476,7 +472,7 @@ export default function AdminUsersPage() {
             </Button>
             <Button onClick={handleFormSubmit} disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {editingId ? t('common.save') : t('common.save')}
+              {t('common.save')}
             </Button>
           </DialogFooter>
         </DialogContent>

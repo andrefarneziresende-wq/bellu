@@ -87,6 +87,24 @@ async function main() {
 
   console.log('Admin superuser created: admin@beauty.com');
 
+  // ── Mobile Test User ─────────────────────────────────────
+  const userPasswordHash = await bcrypt.hash('teste123', 10);
+
+  await prisma.user.upsert({
+    where: { email: 'teste@bellu.com' },
+    update: {},
+    create: {
+      name: 'Usuário Teste',
+      email: 'teste@bellu.com',
+      phone: '11999999999',
+      passwordHash: userPasswordHash,
+      countryId: brazil.id,
+      locale: 'pt-BR',
+    },
+  });
+
+  console.log('Mobile test user created: teste@bellu.com');
+
   console.log('Seed completed.');
 }
 

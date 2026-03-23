@@ -15,6 +15,7 @@ import {
   Image,
   Bell,
   Shield,
+  ShieldCheck,
   Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,7 @@ const navigation = [
   { key: 'banners', href: '/banners', icon: Image },
   { key: 'notifications', href: '/notifications', icon: Bell },
   { key: 'admins', href: '/admin-users', icon: Shield },
+  { key: 'roles', href: '/admin-roles', icon: ShieldCheck },
   { key: 'settings', href: '/settings', icon: Settings },
 ];
 

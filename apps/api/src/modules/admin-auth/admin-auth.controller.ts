@@ -565,11 +565,12 @@ export async function listAdminUsersHandler(request: FastifyRequest, reply: Fast
       id: true,
       name: true,
       email: true,
-      role: true,
+      roleId: true,
       active: true,
       createdAt: true,
       countryId: true,
       country: { select: { id: true, name: true, code: true } },
+      staffRole: { select: { id: true, name: true } },
     },
   });
 
@@ -581,7 +582,7 @@ export async function createAdminUserHandler(request: FastifyRequest, reply: Fas
     name: string;
     email: string;
     password: string;
-    role?: string;
+    roleId?: string;
     countryId?: string;
     active?: boolean;
   };
@@ -593,7 +594,7 @@ export async function createAdminUserHandler(request: FastifyRequest, reply: Fas
       name: body.name,
       email: body.email,
       passwordHash,
-      role: body.role || 'ADMIN',
+      roleId: body.roleId || null,
       countryId: body.countryId || null,
       active: body.active ?? true,
     },
@@ -612,7 +613,7 @@ export async function updateAdminUserHandler(
     name?: string;
     email?: string;
     password?: string;
-    role?: string;
+    roleId?: string | null;
     countryId?: string;
     active?: boolean;
   };
@@ -624,7 +625,7 @@ export async function updateAdminUserHandler(
   if (body.name !== undefined) updateData.name = body.name;
   if (body.email !== undefined) updateData.email = body.email;
   if (body.password !== undefined) updateData.passwordHash = await bcrypt.hash(body.password, 10);
-  if (body.role !== undefined) updateData.role = body.role;
+  if (body.roleId !== undefined) updateData.roleId = body.roleId || null;
   if (body.countryId !== undefined) updateData.countryId = body.countryId || null;
   if (body.active !== undefined) updateData.active = body.active;
 

@@ -33,6 +33,7 @@ import {
   updateAdminUserHandler,
   deleteAdminUserHandler,
 } from './admin-auth.controller.js';
+import * as adminRoleCtrl from '../admin-role/admin-role.controller.js';
 
 export async function adminAuthRoutes(app: FastifyInstance) {
   // Public
@@ -83,4 +84,12 @@ export async function adminAuthRoutes(app: FastifyInstance) {
   app.post('/admin-users', { preHandler: [authenticate] }, createAdminUserHandler);
   app.patch<{ Params: { id: string } }>('/admin-users/:id', { preHandler: [authenticate] }, updateAdminUserHandler);
   app.delete<{ Params: { id: string } }>('/admin-users/:id', { preHandler: [authenticate] }, deleteAdminUserHandler);
+
+  // Admin Roles CRUD
+  app.get('/admin-roles', { preHandler: [authenticate] }, adminRoleCtrl.listHandler);
+  app.get<{ Params: { id: string } }>('/admin-roles/:id', { preHandler: [authenticate] }, adminRoleCtrl.getByIdHandler);
+  app.get('/admin-roles-permissions', { preHandler: [authenticate] }, adminRoleCtrl.permissionsHandler);
+  app.post('/admin-roles', { preHandler: [authenticate] }, adminRoleCtrl.createHandler);
+  app.put<{ Params: { id: string } }>('/admin-roles/:id', { preHandler: [authenticate] }, adminRoleCtrl.updateHandler);
+  app.delete<{ Params: { id: string } }>('/admin-roles/:id', { preHandler: [authenticate] }, adminRoleCtrl.deleteHandler);
 }

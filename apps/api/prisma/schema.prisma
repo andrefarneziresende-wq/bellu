@@ -428,6 +428,25 @@ model Favorite {
 }
 
 // ============================================================
+// Admin Staff Role
+// ============================================================
+
+model AdminStaffRole {
+  id          String   @id @default(uuid())
+  name        String   @db.VarChar(50)
+  description String?  @db.VarChar(255)
+  permissions String   @db.Text // JSON array
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  admins AdminUser[]
+
+  @@unique([name])
+  @@map("admin_staff_roles")
+}
+
+// ============================================================
 // Admin User
 // ============================================================
 
@@ -436,21 +455,16 @@ model AdminUser {
   name         String    @db.VarChar(100)
   email        String    @unique @db.VarChar(255)
   passwordHash String    @map("password_hash") @db.VarChar(255)
-  role         AdminRole @default(MODERATOR)
+  roleId       String?   @map("role_id")
   countryId    String?   @map("country_id")
   active       Boolean   @default(true)
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  country Country? @relation(fields: [countryId], references: [id])
+  staffRole AdminStaffRole? @relation(fields: [roleId], references: [id])
+  country   Country?        @relation(fields: [countryId], references: [id])
 
   @@map("admin_users")
-}
-
-enum AdminRole {
-  SUPERADMIN
-  ADMIN
-  MODERATOR
 }
 
 // ============================================================
