@@ -28,6 +28,7 @@ import {
   createServiceTemplateHandler,
   updateServiceTemplateHandler,
   deleteServiceTemplateHandler,
+  listAdminUsersHandler,
   createAdminUserHandler,
   updateAdminUserHandler,
   deleteAdminUserHandler,
@@ -78,6 +79,7 @@ export async function adminAuthRoutes(app: FastifyInstance) {
   app.delete<{ Params: { id: string } }>('/service-templates/:id', { preHandler: [authenticate] }, deleteServiceTemplateHandler);
 
   // Admin Users CRUD
+  app.get('/admin-users', { preHandler: [authenticate] }, listAdminUsersHandler);
   app.post('/admin-users', { preHandler: [authenticate] }, createAdminUserHandler);
   app.patch<{ Params: { id: string } }>('/admin-users/:id', { preHandler: [authenticate] }, updateAdminUserHandler);
   app.delete<{ Params: { id: string } }>('/admin-users/:id', { preHandler: [authenticate] }, deleteAdminUserHandler);

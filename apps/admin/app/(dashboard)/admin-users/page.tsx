@@ -210,7 +210,7 @@ export default function AdminUsersPage() {
       }
 
       if (editingId) {
-        await apiFetch(`/api/admin/users/${editingId}`, {
+        await apiFetch(`/api/admin/admin-users/${editingId}`, {
           method: 'PATCH',
           body: JSON.stringify(body),
         });
@@ -243,7 +243,7 @@ export default function AdminUsersPage() {
     if (!deletingUser) return;
     setDeleting(true);
     try {
-      await apiFetch(`/api/admin/users/${deletingUser.id}`, {
+      await apiFetch(`/api/admin/admin-users/${deletingUser.id}`, {
         method: 'DELETE',
       });
       setDeleteOpen(false);

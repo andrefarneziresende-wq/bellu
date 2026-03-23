@@ -558,6 +558,24 @@ export async function listServicesHandler(request: FastifyRequest, reply: Fastif
   });
 }
 
+export async function listAdminUsersHandler(request: FastifyRequest, reply: FastifyReply) {
+  const adminUsers = await prisma.adminUser.findMany({
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      active: true,
+      createdAt: true,
+      countryId: true,
+      country: { select: { id: true, name: true, code: true } },
+    },
+  });
+
+  return reply.status(200).send({ success: true, data: adminUsers });
+}
+
 export async function createAdminUserHandler(request: FastifyRequest, reply: FastifyReply) {
   const body = request.body as {
     name: string;

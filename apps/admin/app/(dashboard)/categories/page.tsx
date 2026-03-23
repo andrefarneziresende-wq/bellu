@@ -1,8 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Plus, Pencil, Trash2, GripVertical, Loader2, Grid3X3, Search, type LucideIcon } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import {
+  Plus, Pencil, Trash2, GripVertical, Loader2, Grid3X3, Search,
+  Scissors, Sparkles, Wind, Paintbrush, Gem, Diamond, Droplets, Droplet,
+  Sun, Moon, ShieldCheck, FlaskConical, Eye, EyeOff, ScanEye, Focus,
+  Palette, Pipette, Flower2, Heart, Star, Activity, Flame, Leaf,
+  TreePalm, Waves, Zap, CircleUserRound, Crown, BadgeCheck, Shirt,
+  Calendar, Clock, Gift, Award, Sparkle, CircleDot, Hand, PaintBucket,
+  Ribbon, Wand2, Brush,
+  type LucideIcon,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +65,15 @@ const emptyForm: CategoryFormData = {
 };
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function toSlug(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
 
 // Curated Lucide icon names organized by beauty/wellness categories
 const ICON_OPTIONS: { group: string; icons: { name: string; label: string }[] }[] = [
@@ -144,10 +161,17 @@ const ICON_OPTIONS: { group: string; icons: { name: string; label: string }[] }[
   },
 ];
 
-// Helper to get a Lucide icon component by name
+// Explicit icon map — avoids tree-shaking issues with `import * as LucideIcons`
+const ICON_MAP: Record<string, LucideIcon> = {
+  Scissors, Sparkles, Wind, Brush, Paintbrush, Hand, Gem, Diamond, PaintBucket,
+  Droplets, Droplet, Sun, Moon, ShieldCheck, FlaskConical, Eye, EyeOff, ScanEye,
+  Focus, Palette, Pipette, Flower2, Heart, Star, Activity, Flame, Leaf, TreePalm,
+  Waves, Zap, CircleUserRound, Crown, BadgeCheck, Shirt, Calendar, Clock, Gift,
+  Award, Ribbon, Sparkle, Wand2, CircleDot,
+};
+
 function getLucideIcon(name: string): LucideIcon | null {
-  const icons = LucideIcons as unknown as Record<string, LucideIcon>;
-  return icons[name] || null;
+  return ICON_MAP[name] || null;
 }
 
 // Render a Lucide icon from a stored name string
@@ -635,7 +659,12 @@ export default function CategoriesPage() {
                 id="namePtBR"
                 value={formData.namePtBR}
                 onChange={(e) => {
-                  setFormData((prev) => ({ ...prev, namePtBR: e.target.value }));
+                  const name = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    namePtBR: name,
+                    ...(!editingId ? { slug: toSlug(name) } : {}),
+                  }));
                   clearFieldError('namePtBR');
                 }}
                 placeholder="Nome em português"
