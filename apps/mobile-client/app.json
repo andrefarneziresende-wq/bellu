@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "GlamApp",
+    "name": "Bellu",
     "slug": "glamapp",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -19,7 +19,13 @@
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FAF7F5"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyACtVOd9e3hazjcTbkQT6V5VYoZ2dmt-9c"
+        }
       },
       "package": "com.glamapp.client"
     },

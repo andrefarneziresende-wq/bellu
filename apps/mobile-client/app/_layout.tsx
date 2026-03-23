@@ -24,27 +24,32 @@ const queryClient = new QueryClient({
 function SplashOverlay() {
   return (
     <Animated.View
-      entering={FadeIn.duration(300)}
-      exiting={FadeOut.duration(400)}
+      entering={FadeIn.duration(200)}
+      exiting={FadeOut.duration(500)}
       style={splashStyles.container}
     >
-      <Animated.View entering={ZoomIn.duration(600)} style={splashStyles.logoWrap}>
+      {/* Full logo — the B icon + "Bellu" text are part of the image */}
+      <Animated.View entering={FadeIn.delay(100).duration(600)} style={splashStyles.logoWrap}>
         <Image
           source={require('../assets/logo.png')}
           style={splashStyles.logo}
           contentFit="contain"
         />
       </Animated.View>
-      <Animated.Text entering={FadeInDown.delay(300).duration(500)} style={splashStyles.title}>
-        Bellu
-      </Animated.Text>
-      <Animated.Text entering={FadeInDown.delay(500).duration(500)} style={splashStyles.subtitle}>
+
+      {/* Tagline below the logo */}
+      <Animated.Text entering={FadeInDown.delay(400).duration(500)} style={splashStyles.subtitle}>
         Beleza & Estética
       </Animated.Text>
-      <Animated.View entering={FadeIn.delay(700).duration(400)} style={splashStyles.dots}>
-        {[0, 1, 2].map((i) => (
-          <View key={i} style={[splashStyles.dot, i === 1 && splashStyles.dotActive]} />
-        ))}
+
+      {/* Subtle loading indicator */}
+      <Animated.View entering={FadeIn.delay(600).duration(400)} style={splashStyles.loader}>
+        <View style={splashStyles.loaderTrack}>
+          <Animated.View
+            entering={FadeIn.delay(700).duration(300)}
+            style={splashStyles.loaderBar}
+          />
+        </View>
       </Animated.View>
     </Animated.View>
   );
@@ -59,48 +64,38 @@ const splashStyles = StyleSheet.create({
     zIndex: 9999,
   },
   logoWrap: {
-    width: 100,
-    height: 100,
-    borderRadius: 28,
-    backgroundColor: colors.white,
-    justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 10,
-    marginBottom: 16,
+    justifyContent: 'center',
+    marginBottom: 12,
   },
   logo: {
-    width: 70,
-    height: 70,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-    letterSpacing: 1.5,
+    width: 180,
+    height: 220,
   },
   subtitle: {
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.medium,
     color: colors.textSecondary,
-    marginTop: 4,
+    letterSpacing: 0.5,
+    marginTop: 2,
   },
-  dots: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 40,
+  loader: {
+    position: 'absolute',
+    bottom: 80,
+    alignItems: 'center',
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  loaderTrack: {
+    width: 40,
+    height: 3,
+    borderRadius: 2,
     backgroundColor: colors.border,
+    overflow: 'hidden',
   },
-  dotActive: {
+  loaderBar: {
+    width: 20,
+    height: 3,
+    borderRadius: 2,
     backgroundColor: colors.primary,
-    width: 24,
   },
 });
 
