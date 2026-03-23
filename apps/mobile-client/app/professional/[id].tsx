@@ -32,24 +32,22 @@ export default function ProfessionalScreen() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [profRes, servRes, revRes] = await Promise.all([
-          professionalsApi.getById(id),
+        // Fetch professional first — this is required
+        const profRes = await professionalsApi.getById(id);
+        setProfessional(profRes.data);
+
+        // Fetch related data separately so failures don't block the page
+        const [servRes, revRes, portRes] = await Promise.allSettled([
           servicesApi.getByProfessional(id),
           reviewsApi.getByProfessional(id),
+          portfolioApi.getByProfessional(id),
         ]);
-        setProfessional(profRes.data);
-        setServices(servRes.data);
-        setReviews(revRes.data);
-
-        // Fetch portfolio separately (may not exist)
-        try {
-          const portRes = await portfolioApi.getByProfessional(id);
-          setPortfolio(portRes.data);
-        } catch (_) {
-          setPortfolio([]);
-        }
+        setServices(servRes.status === 'fulfilled' ? servRes.value.data : []);
+        setReviews(revRes.status === 'fulfilled' ? revRes.value.data : []);
+        setPortfolio(portRes.status === 'fulfilled' ? portRes.value.data : []);
       } catch (error: any) {
-        // Handle error
+        // Professional fetch failed
+        setProfessional(null);
       } finally {
         setLoading(false);
       }

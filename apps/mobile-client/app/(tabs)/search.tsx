@@ -374,7 +374,21 @@ export default function SearchScreen() {
         </View>
         <Pressable
           style={[styles.mapToggle, showMap && styles.mapToggleActive]}
-          onPress={() => setShowMap(!showMap)}
+          onPress={() => {
+            if (showMap) {
+              // Switching to list: keep address and results
+              if (addressQuery) setQuery(addressQuery);
+              if (nearbyResults.length > 0) {
+                setResults(nearbyResults);
+                setSearched(true);
+              }
+            } else {
+              // Switching to map: keep query as address
+              if (query) setAddressQuery(query);
+              if (results.length > 0) setNearbyResults(results);
+            }
+            setShowMap(!showMap);
+          }}
         >
           <Ionicons name={showMap ? 'list' : 'map'} size={22} color={showMap ? colors.white : colors.primary} />
         </Pressable>
@@ -643,7 +657,7 @@ const styles = StyleSheet.create({
   calloutReviews: { fontSize: typography.sizes.xs, color: colors.textSecondary },
   calloutAddress: { fontSize: typography.sizes.xs, color: colors.textSecondary, marginTop: 3 },
   calloutTap: { fontSize: typography.sizes.xs, color: colors.primary, fontWeight: typography.weights.medium, marginTop: 4 },
-  mapCardList: { position: 'absolute', bottom: 40, left: 0, right: 0 },
+  mapCardList: { position: 'absolute', bottom: 80, left: 0, right: 0 },
   mapCard: { width: 260, backgroundColor: colors.white, borderRadius: radii.lg, marginRight: spacing.md, flexDirection: 'row', overflow: 'hidden', elevation: 4, shadowColor: colors.shadowDark, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
   mapCardImage: { width: 80, height: 80 },
   mapCardInfo: { flex: 1, padding: spacing.sm, justifyContent: 'center' },
