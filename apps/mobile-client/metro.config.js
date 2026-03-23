@@ -56,4 +56,28 @@ config.resolver.extraNodeModules = {
   ...(reactNative && { 'react-native': reactNative }),
 };
 
+// Block root's react if it's NOT react 18 (prevents react-native from
+// importing react 19 which crashes with "ReactCurrentDispatcher undefined")
+const rootNM = path.resolve(monorepoRoot, 'node_modules');
+const blockPatterns = [];
+
+function shouldBlockRoot(pkg) {
+  const rootPkgPath = path.resolve(rootNM, pkg, 'package.json');
+  try {
+    const rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf8'));
+    if (!rootPkg.version.startsWith('18.')) {
+      console.log(`[Metro] Blocking root ${pkg}@${rootPkg.version} (need v18)`);
+      const escaped = path.resolve(rootNM, pkg).replace(/[/\\]/g, '[/\\\\]');
+      blockPatterns.push(new RegExp('^' + escaped + '[/\\\\].*'));
+    }
+  } catch {}
+}
+
+shouldBlockRoot('react');
+shouldBlockRoot('react-dom');
+
+if (blockPatterns.length > 0) {
+  config.resolver.blockList = blockPatterns;
+}
+
 module.exports = config;
