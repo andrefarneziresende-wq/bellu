@@ -135,10 +135,11 @@ export default function SearchScreen() {
     setNearbyLoading(true);
     Keyboard.dismiss();
     try {
-      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry&key=${GOOGLE_MAPS_API_KEY}`;
+      // Use Geocoding API with place_id (more reliable than Place Details)
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?place_id=${placeId}&key=${GOOGLE_MAPS_API_KEY}`;
       const res = await fetch(url);
       const data = await res.json();
-      const loc = data.result?.geometry?.location;
+      const loc = data.results?.[0]?.geometry?.location;
       if (loc) {
         const newRegion: Region = {
           latitude: loc.lat,
