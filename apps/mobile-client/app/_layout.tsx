@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -7,9 +7,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Animated, { FadeIn, FadeOut, ZoomIn, FadeInDown } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
 import { ToastProvider } from '../components/ui/Toast';
 import { useAuthStore } from '../stores/authStore';
 import { colors, typography } from '../theme/colors';
+import {
+  registerForPushNotifications,
+  sendPushTokenToServer,
+  setupNotificationChannel,
+} from '../services/notifications';
 import '../locales';
 
 // Prevent the native splash screen from auto-hiding
@@ -106,6 +112,34 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const isLoading = useAuthStore((s) => s.isLoading);
   const [appReady, setAppReady] = useState(false);
   const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
+  const pushRegistered = useRef(false);
+
+  // Register push notifications when authenticated
+  useEffect(() => {
+    if (isAuthenticated && !pushRegistered.current) {
+      pushRegistered.current = true;
+      setupNotificationChannel();
+      registerForPushNotifications().then((token) => {
+        if (token) sendPushTokenToServer(token);
+      });
+    }
+    if (!isAuthenticated) {
+      pushRegistered.current = false;
+    }
+  }, [isAuthenticated]);
+
+  // Handle notification tap — navigate to relevant screen
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data;
+      if (data?.bookingId) {
+        router.push(`/(tabs)/bookings`);
+      } else if (data?.professionalId) {
+        router.push(`/(tabs)/explore`);
+      }
+    });
+    return () => subscription.remove();
+  }, [router]);
 
   useEffect(() => {
     if (isLoading) return;

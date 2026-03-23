@@ -38,6 +38,14 @@
         {
           "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location to find nearby professionals."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#C4918E",
+          "sounds": []
+        }
       ]
     ],
     "experiments": {

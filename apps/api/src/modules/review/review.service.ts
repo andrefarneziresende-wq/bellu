@@ -1,5 +1,6 @@
 import { prisma } from '../../config/prisma.js';
 import { NotFoundError, BadRequestError, ConflictError } from '../../shared/errors.js';
+import { onReviewReceived } from '../notification/push-triggers.js';
 
 interface CreateReviewInput {
   bookingId: string;
@@ -51,13 +52,19 @@ export async function createReview(userId: string, data: CreateReviewInput) {
     _count: { rating: true },
   });
 
-  await prisma.professional.update({
+  const professional = await prisma.professional.update({
     where: { id: booking.professionalId },
     data: {
       rating: aggregation._avg.rating ?? 0,
       totalReviews: aggregation._count.rating,
     },
   });
+
+  // Push notification to professional
+  onReviewReceived({
+    ...review,
+    professional: { id: professional.id, userId: professional.userId },
+  }).catch(() => {});
 
   return review;
 }

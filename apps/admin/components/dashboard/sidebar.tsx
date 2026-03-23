@@ -13,6 +13,7 @@ import {
   Scissors,
   Megaphone,
   Image,
+  Bell,
   Shield,
   Settings,
 } from 'lucide-react';
@@ -31,6 +32,7 @@ const navigation = [
   { key: 'services', href: '/services', icon: Scissors },
   { key: 'promotions', href: '/promotions', icon: Megaphone },
   { key: 'banners', href: '/banners', icon: Image },
+  { key: 'notifications', href: '/notifications', icon: Bell },
   { key: 'admins', href: '/admin-users', icon: Shield },
   { key: 'settings', href: '/settings', icon: Settings },
 ];

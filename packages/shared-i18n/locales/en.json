@@ -628,7 +628,18 @@
       "howItWorksItem1": "Automatic reminders: Every day at 6pm, the system sends reminders to clients with bookings the next day.",
       "howItWorksItem2": "Booking confirmation: When a booking is confirmed, the client receives a notification.",
       "howItWorksItem3": "Multi-channel: Notifications are sent through all active channels (email, SMS, WhatsApp).",
-      "howItWorksItem4": "Manual send: Use the \"Send Reminders\" button to trigger reminders manually at any time."
+      "howItWorksItem4": "Manual send: Use the \"Send Reminders\" button to trigger reminders manually at any time.",
+      "broadcast": "Send to all clients",
+      "broadcastSubtitle": "Send a notification to all your clients at once",
+      "notificationTitle": "Title",
+      "notificationTitlePlaceholder": "E.g.: News at the salon!",
+      "notificationBody": "Message",
+      "notificationBodyPlaceholder": "Write the message that will be sent to your clients...",
+      "send": "Send notification",
+      "sendSuccess": "Notification sent successfully!",
+      "sendError": "Error sending notification",
+      "recentNotifications": "Recent notifications",
+      "noNotifications": "No notifications sent yet"
     },
     "settings": {
       "title": "Settings",
@@ -666,6 +677,7 @@
       "banners": "Banners",
       "admins": "Administrators",
       "categories": "Categories",
+      "notifications": "Notifications",
       "settings": "Settings"
     },
     "banners": {

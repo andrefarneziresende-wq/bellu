@@ -5,10 +5,11 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { categoriesApi, professionalsApi } from '../../services/api';
+import { categoriesApi, professionalsApi, notificationsApi } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 import type { Category, Professional } from '@beauty/shared-types';
 
@@ -19,6 +20,7 @@ export default function HomeScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const getCategoryName = useCallback((cat: Category) => {
     const tr = cat.translations?.find((t) => t.locale === i18n.language);
@@ -42,6 +44,10 @@ export default function HomeScreen() {
       }
     };
     fetchData();
+    // Fetch unread notification count
+    notificationsApi.unreadCount()
+      .then((res) => setUnreadCount(res.data?.count || 0))
+      .catch(() => {});
   }, []);
 
   if (loading) {
@@ -59,10 +65,24 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* Header */}
         <Animated.View entering={FadeInDown.delay(100)} style={styles.header}>
-          <Text style={styles.greeting}>
-            {user?.name ? t('home.greetingDefault').replace('!', `, ${user.name}!`) : t('home.greetingDefault')}
-          </Text>
-          <Text style={styles.subtitle}>{t('home.featured')}</Text>
+          <View style={styles.headerRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.greeting}>
+                {user?.name ? t('home.greetingDefault').replace('!', `, ${user.name}!`) : t('home.greetingDefault')}
+              </Text>
+              <Text style={styles.subtitle}>{t('home.featured')}</Text>
+            </View>
+            <Pressable style={styles.bellBtn} onPress={() => router.push('/notifications')}>
+              <Ionicons name="notifications-outline" size={24} color={colors.text} />
+              {unreadCount > 0 && (
+                <View style={styles.bellBadge}>
+                  <Text style={styles.bellBadgeText}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
         </Animated.View>
 
         {/* Categories */}
@@ -143,6 +163,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scroll: { paddingHorizontal: spacing.lg },
   header: { paddingTop: spacing.lg, paddingBottom: spacing.xl },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  bellBtn: { padding: spacing.sm, position: 'relative' },
+  bellBadge: { position: 'absolute', top: 2, right: 2, backgroundColor: '#EF4444', borderRadius: 10, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  bellBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
   greeting: { fontSize: typography.sizes.xxl, fontWeight: typography.weights.bold, color: colors.text },
   subtitle: { fontSize: typography.sizes.md, color: colors.textSecondary, marginTop: spacing.xs },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md, marginTop: spacing.xl },

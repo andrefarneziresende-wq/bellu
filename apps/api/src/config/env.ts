@@ -27,6 +27,11 @@ const envSchema = z.object({
   TWILIO_PHONE_NUMBER: z.string().default(''),
   TWILIO_WHATSAPP_NUMBER: z.string().default(''),
 
+  // Firebase Cloud Messaging
+  FCM_PROJECT_ID: z.string().default(''),
+  FCM_CLIENT_EMAIL: z.string().default(''),
+  FCM_PRIVATE_KEY: z.string().default(''),
+
   // Payment gateways (optional in dev)
   STRIPE_SECRET_KEY: z.string().default('sk_test_placeholder'),
   STRIPE_WEBHOOK_SECRET: z.string().default('whsec_placeholder'),

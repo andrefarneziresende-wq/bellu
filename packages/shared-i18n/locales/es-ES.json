@@ -628,7 +628,18 @@
       "howItWorksItem1": "Recordatorios automáticos: Todos los días a las 18h, el sistema envía recordatorios a clientes con reservas al día siguiente.",
       "howItWorksItem2": "Confirmación de reserva: Cuando una reserva es confirmada, el cliente recibe una notificación.",
       "howItWorksItem3": "Multi-canal: Las notificaciones se envían por todos los canales activos (email, SMS, WhatsApp).",
-      "howItWorksItem4": "Envío manual: Use el botón \"Enviar Recordatorios\" para disparar los recordatorios manualmente en cualquier momento."
+      "howItWorksItem4": "Envío manual: Use el botón \"Enviar Recordatorios\" para disparar los recordatorios manualmente en cualquier momento.",
+      "broadcast": "Enviar a todos los clientes",
+      "broadcastSubtitle": "Envíe una notificación a todos sus clientes de una vez",
+      "notificationTitle": "Título",
+      "notificationTitlePlaceholder": "Ej: ¡Novedades en el salón!",
+      "notificationBody": "Mensaje",
+      "notificationBodyPlaceholder": "Escriba el mensaje que será enviado a sus clientes...",
+      "send": "Enviar notificación",
+      "sendSuccess": "¡Notificación enviada con éxito!",
+      "sendError": "Error al enviar notificación",
+      "recentNotifications": "Notificaciones recientes",
+      "noNotifications": "Ninguna notificación enviada aún"
     },
     "settings": {
       "title": "Ajustes",
@@ -666,6 +677,7 @@
       "banners": "Banners",
       "admins": "Administradores",
       "categories": "Categorías",
+      "notifications": "Notificaciones",
       "settings": "Ajustes"
     },
     "banners": {

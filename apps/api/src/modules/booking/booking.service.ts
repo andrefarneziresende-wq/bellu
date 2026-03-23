@@ -1,6 +1,7 @@
 import { prisma } from '../../config/prisma.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../../shared/errors.js';
 import { onSessionCompleted } from '../client-package/client-package.service.js';
+import { onBookingCreated, onBookingConfirmed, onBookingCancelled, onBookingCompleted, onNewBookingForPro } from '../notification/push-triggers.js';
 
 interface CreateBookingInput {
   professionalId?: string;
@@ -117,11 +118,15 @@ export async function createBooking(userId: string, data: CreateBookingInput) {
     },
     include: {
       service: true,
-      professional: { select: { id: true, businessName: true } },
+      professional: { select: { id: true, businessName: true, userId: true } },
       member: { select: { id: true, name: true, avatar: true } },
       user: { select: { id: true, name: true } },
     },
   });
+
+  // Push notifications (fire-and-forget)
+  onBookingCreated(booking).catch(() => {});
+  onNewBookingForPro(booking).catch(() => {});
 
   return booking;
 }
@@ -292,10 +297,19 @@ export async function updateBookingStatus(
     data: updateData,
     include: {
       service: true,
-      professional: { select: { id: true, businessName: true } },
+      professional: { select: { id: true, businessName: true, userId: true } },
       user: { select: { id: true, name: true } },
     },
   });
+
+  // Push notifications (fire-and-forget)
+  if (newStatus === 'CONFIRMED') {
+    onBookingConfirmed(updated).catch(() => {});
+  } else if (newStatus === 'CANCELLED') {
+    onBookingCancelled(updated, isProfessional).catch(() => {});
+  } else if (newStatus === 'COMPLETED') {
+    onBookingCompleted(updated).catch(() => {});
+  }
 
   // If this booking belongs to a client package, update session counter
   if (newStatus === 'COMPLETED') {

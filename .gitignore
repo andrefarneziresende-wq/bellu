@@ -12,3 +12,5 @@ coverage/
 .DS_Store
 android/
 ios/
+apps/mobile-client/GoogleService-Info.plist
+apps/mobile-client/google-services.json

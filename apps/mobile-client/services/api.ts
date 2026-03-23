@@ -228,6 +228,33 @@ export const clientPackagesApi = {
     }),
 };
 
+// --- Notifications ---
+export interface NotificationData {
+  id: string;
+  title: string;
+  body: string;
+  type: string;
+  data: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+export const notificationsApi = {
+  list: (page = 1) =>
+    request<{ success: boolean; data: NotificationData[]; pagination: { total: number; page: number; perPage: number; totalPages: number }; unreadCount: number }>(
+      `/notifications/my?page=${page}`,
+    ),
+
+  markRead: (id: string) =>
+    request<ApiResponse<null>>(`/notifications/${id}/read`, { method: 'PATCH' }),
+
+  markAllRead: () =>
+    request<ApiResponse<null>>('/notifications/read-all', { method: 'PATCH' }),
+
+  unreadCount: () =>
+    request<ApiResponse<{ count: number }>>('/notifications/unread-count'),
+};
+
 // --- Booking Photos ---
 export interface BookingPhotoData {
   id: string;

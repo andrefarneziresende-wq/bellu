@@ -3,11 +3,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Bell, Mail, MessageSquare, Phone, Loader2, Send, CheckCircle, XCircle, Info } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useTranslation } from '@/lib/i18n';
+
+interface BroadcastFieldErrors {
+  title?: string;
+  body?: string;
+  form?: string;
+}
 
 interface NotificationStatus {
   email: boolean;
@@ -27,8 +36,41 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [lastResult, setLastResult] = useState<ReminderSummary | null>(null);
+  const [broadcastForm, setBroadcastForm] = useState({ title: '', body: '' });
+  const [broadcastErrors, setBroadcastErrors] = useState<BroadcastFieldErrors>({});
+  const [broadcastSubmitting, setBroadcastSubmitting] = useState(false);
   const toast = useToast();
   const { t } = useTranslation();
+
+  const clearBroadcastError = (field: keyof BroadcastFieldErrors) => {
+    setBroadcastErrors((prev) => { const next = { ...prev }; delete next[field]; return next; });
+  };
+
+  const handleBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const errors: BroadcastFieldErrors = {};
+    if (!broadcastForm.title.trim()) errors.title = t('validation.required');
+    if (!broadcastForm.body.trim()) errors.body = t('validation.required');
+    setBroadcastErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    setBroadcastSubmitting(true);
+    try {
+      await apiFetch('/api/notifications/pro/broadcast', {
+        method: 'POST',
+        body: JSON.stringify({ title: broadcastForm.title.trim(), body: broadcastForm.body.trim() }),
+      });
+      toast.success(t('proDashboard.notifications.sendSuccess'));
+      setBroadcastForm({ title: '', body: '' });
+      setBroadcastErrors({});
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t('proDashboard.notifications.sendError');
+      setBroadcastErrors({ form: msg });
+      toast.error(t('proDashboard.notifications.sendError'));
+    } finally {
+      setBroadcastSubmitting(false);
+    }
+  };
 
   const fetchStatus = useCallback(async () => {
     setLoading(true);
@@ -96,6 +138,53 @@ export default function NotificationsPage() {
           {t('proDashboard.notifications.sendReminders')}
         </Button>
       </div>
+
+      {/* Broadcast to all clients */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Send className="h-5 w-5 text-brand-rose" />
+            {t('proDashboard.notifications.broadcast')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="mb-4 text-sm text-muted-foreground">
+            {t('proDashboard.notifications.broadcastSubtitle')}
+          </p>
+          <form onSubmit={handleBroadcast} noValidate className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t('proDashboard.notifications.notificationTitle')} *</Label>
+              <Input
+                value={broadcastForm.title}
+                onChange={(e) => { setBroadcastForm((p) => ({ ...p, title: e.target.value })); clearBroadcastError('title'); }}
+                placeholder={t('proDashboard.notifications.notificationTitlePlaceholder')}
+                className={broadcastErrors.title ? 'border-brand-error' : ''}
+              />
+              {broadcastErrors.title && <p className="text-xs text-brand-error">{broadcastErrors.title}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>{t('proDashboard.notifications.notificationBody')} *</Label>
+              <Textarea
+                value={broadcastForm.body}
+                onChange={(e) => { setBroadcastForm((p) => ({ ...p, body: e.target.value })); clearBroadcastError('body'); }}
+                placeholder={t('proDashboard.notifications.notificationBodyPlaceholder')}
+                className={broadcastErrors.body ? 'border-brand-error' : ''}
+                rows={5}
+              />
+              {broadcastErrors.body && <p className="text-xs text-brand-error">{broadcastErrors.body}</p>}
+            </div>
+            {broadcastErrors.form && (
+              <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                <p className="text-sm text-brand-error">{broadcastErrors.form}</p>
+              </div>
+            )}
+            <Button type="submit" disabled={broadcastSubmitting}>
+              {broadcastSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              {t('proDashboard.notifications.send')}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {/* Status Cards */}
       <div className="grid gap-4 md:grid-cols-3">

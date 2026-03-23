@@ -628,7 +628,18 @@
       "howItWorksItem1": "Lembretes automáticos: Todos os dias às 18h, o sistema envia lembretes para clientes com agendamentos no dia seguinte.",
       "howItWorksItem2": "Confirmação de agendamento: Quando um agendamento é confirmado, o cliente recebe uma notificação.",
       "howItWorksItem3": "Multi-canal: As notificações são enviadas por todos os canais ativos (email, SMS, WhatsApp).",
-      "howItWorksItem4": "Envio manual: Use o botão \"Enviar Lembretes\" para disparar os lembretes manualmente a qualquer momento."
+      "howItWorksItem4": "Envio manual: Use o botão \"Enviar Lembretes\" para disparar os lembretes manualmente a qualquer momento.",
+      "broadcast": "Enviar para todos os clientes",
+      "broadcastSubtitle": "Envie uma notificação para todos os seus clientes de uma vez",
+      "notificationTitle": "Título",
+      "notificationTitlePlaceholder": "Ex: Novidade no salão!",
+      "notificationBody": "Mensagem",
+      "notificationBodyPlaceholder": "Escreva a mensagem que será enviada aos seus clientes...",
+      "send": "Enviar notificação",
+      "sendSuccess": "Notificação enviada com sucesso!",
+      "sendError": "Erro ao enviar notificação",
+      "recentNotifications": "Notificações recentes",
+      "noNotifications": "Nenhuma notificação enviada ainda"
     },
     "settings": {
       "title": "Configurações",
@@ -666,6 +677,7 @@
       "banners": "Banners",
       "admins": "Administradores",
       "categories": "Categorias",
+      "notifications": "Notificações",
       "settings": "Configurações"
     },
     "banners": {

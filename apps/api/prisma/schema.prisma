@@ -68,6 +68,8 @@ model User {
   refreshTokens RefreshToken[]
   clientPackages ClientPackage[]
   uploadedPhotos BookingPhoto[] @relation("BookingPhotoUploader")
+  pushTokens     PushToken[]
+  notifications  Notification[]
 
   @@index([countryId])
   @@index([email])
@@ -680,6 +682,49 @@ model PromotionService {
 
   @@unique([promotionId, serviceId])
   @@map("promotion_services")
+}
+
+// ============================================================
+// Push Token (FCM device tokens for push notifications)
+// ============================================================
+
+model PushToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @db.VarChar(500)
+  platform  String   @db.VarChar(10) // ios, android, web
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, token])
+  @@index([userId])
+  @@index([token])
+  @@map("push_tokens")
+}
+
+// ============================================================
+// Notification (in-app notification log)
+// ============================================================
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String   @db.VarChar(200)
+  body      String   @db.Text
+  type      String   @db.VarChar(50) // booking_created, booking_confirmed, booking_cancelled, booking_reminder, review_received, promotion, admin_broadcast, pro_message
+  data      String?  @db.Text // JSON payload for deep-linking
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([read])
+  @@map("notifications")
 }
 
 // ============================================================
