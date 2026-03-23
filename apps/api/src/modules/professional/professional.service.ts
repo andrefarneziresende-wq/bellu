@@ -151,24 +151,23 @@ export async function searchProfessionals(filters: SearchFilters) {
   const useGeoSearch = latitude !== undefined && longitude !== undefined;
 
   if (useGeoSearch) {
-    // Build raw SQL for geo search with PostGIS
+    // Haversine distance calculation in pure SQL (no PostGIS needed)
+    // Returns distance in meters
+    const distanceExpr = `
+      6371000 * 2 * ASIN(SQRT(
+        POWER(SIN(RADIANS(p.latitude - $1) / 2), 2) +
+        COS(RADIANS($1)) * COS(RADIANS(p.latitude)) *
+        POWER(SIN(RADIANS(p.longitude - $2) / 2), 2)
+      ))
+    `;
+
     const conditions: string[] = [
       'p.active = true',
       `p.status = 'APPROVED'`,
+      `${distanceExpr} <= $3`,
     ];
-    const params: unknown[] = [];
-    let paramIndex = 1;
-
-    // Geo filter
-    conditions.push(
-      `ST_DWithin(
-        ST_MakePoint(p.longitude, p.latitude)::geography,
-        ST_MakePoint($${paramIndex}, $${paramIndex + 1})::geography,
-        $${paramIndex + 2}
-      )`,
-    );
-    params.push(longitude, latitude, radiusKm * 1000);
-    paramIndex += 3;
+    const params: unknown[] = [latitude, longitude, radiusKm * 1000];
+    let paramIndex = 4;
 
     if (query) {
       conditions.push(`(p.business_name ILIKE $${paramIndex} OR u.name ILIKE $${paramIndex})`);
@@ -220,10 +219,7 @@ export async function searchProfessionals(filters: SearchFilters) {
         p.*,
         u.name AS user_name,
         u.avatar AS user_avatar,
-        ST_Distance(
-          ST_MakePoint(p.longitude, p.latitude)::geography,
-          ST_MakePoint($1, $2)::geography
-        ) AS distance_meters
+        (${distanceExpr}) AS distance_meters
       FROM professionals p
       JOIN users u ON u.id = p.user_id
       WHERE ${whereClause}

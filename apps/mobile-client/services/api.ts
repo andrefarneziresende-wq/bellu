@@ -104,10 +104,10 @@ export const professionalsApi = {
   list: (params?: { categoryId?: string; lat?: number; lng?: number; page?: number }) => {
     const query = new URLSearchParams();
     if (params?.categoryId) query.set('categoryId', params.categoryId);
-    if (params?.lat) query.set('lat', String(params.lat));
-    if (params?.lng) query.set('lng', String(params.lng));
+    if (params?.lat) query.set('latitude', String(params.lat));
+    if (params?.lng) query.set('longitude', String(params.lng));
     if (params?.page) query.set('page', String(params.page));
-    return request<PaginatedResponse<Professional>>(`/professionals?${query}`);
+    return request<PaginatedResponse<Professional>>(`/professionals/search?${query}`);
   },
 
   getById: (id: string) =>
@@ -117,7 +117,7 @@ export const professionalsApi = {
     request<ApiResponse<Professional[]>>(`/professionals/featured?countryId=${encodeURIComponent(countryId)}`),
 
   search: (query: string) =>
-    request<PaginatedResponse<Professional>>(`/professionals/search?q=${encodeURIComponent(query)}`),
+    request<PaginatedResponse<Professional>>(`/professionals/search?query=${encodeURIComponent(query)}`),
 };
 
 // --- Services ---
