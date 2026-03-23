@@ -39,7 +39,18 @@
     "termsAgreement": "Al continuar, aceptas nuestros Términos de Uso y Política de Privacidad",
     "fillAllFields": "Rellena todos los campos",
     "loginError": "Correo o contraseña incorrectos",
-    "registerError": "Error al crear la cuenta. Inténtalo de nuevo."
+    "registerError": "Error al crear la cuenta. Inténtalo de nuevo.",
+    "forgotTitle": "¿Olvidaste tu contraseña?",
+    "forgotSubtitle": "Ingresa tu correo para recibir el código",
+    "sendCode": "Enviar código",
+    "resetTitle": "Nueva contraseña",
+    "resetSubtitle": "Ingresa el código y tu nueva contraseña",
+    "codePlaceholder": "Código de 6 dígitos",
+    "newPasswordPlaceholder": "Nueva contraseña",
+    "resetPassword": "Restablecer contraseña",
+    "codeSent": "Código enviado a tu correo",
+    "resetSuccess": "¡Contraseña restablecida con éxito!",
+    "resetError": "Código inválido o expirado"
   },
   "home": {
     "greeting": "Hola, {{name}}",
@@ -679,7 +690,8 @@
       "roles": "Cargos Admin",
       "categories": "Categorías",
       "notifications": "Notificaciones",
-      "settings": "Ajustes"
+      "settings": "Ajustes",
+      "legal": "Términos y Políticas"
     },
     "banners": {
       "title": "Banners",
@@ -816,6 +828,28 @@
       "permRolesManage": "Gestionar cargos",
       "permSettingsView": "Ver ajustes",
       "permSettingsEdit": "Editar ajustes"
+    },
+    "legal": {
+      "title": "Documentos Legales",
+      "subtitle": "Gestione términos de uso y políticas de privacidad",
+      "newDocument": "Nuevo Documento",
+      "editDocument": "Editar Documento",
+      "deleteDocument": "Eliminar Documento",
+      "deleteConfirm": "¿Está seguro de que desea eliminar este documento?",
+      "type": "Tipo",
+      "termsOfUse": "Términos de Uso",
+      "privacyPolicy": "Política de Privacidad",
+      "locale": "Idioma",
+      "title_field": "Título",
+      "content": "Contenido",
+      "version": "Versión",
+      "active": "Activo",
+      "noDocuments": "Ningún documento registrado",
+      "loadError": "Error al cargar documentos",
+      "saveSuccess": "Documento guardado correctamente",
+      "saveError": "Error al guardar documento",
+      "deleteSuccess": "Documento eliminado correctamente",
+      "deleteError": "Error al eliminar documento"
     }
   },
   "website": {

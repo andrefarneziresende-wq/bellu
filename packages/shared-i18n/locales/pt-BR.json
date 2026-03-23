@@ -39,7 +39,18 @@
     "termsAgreement": "Ao continuar, você aceita nossos Termos de Uso e Política de Privacidade",
     "fillAllFields": "Preencha todos os campos",
     "loginError": "Email ou senha incorretos",
-    "registerError": "Erro ao criar conta. Tente novamente."
+    "registerError": "Erro ao criar conta. Tente novamente.",
+    "forgotTitle": "Esqueceu a senha?",
+    "forgotSubtitle": "Informe seu e-mail para receber o código",
+    "sendCode": "Enviar código",
+    "resetTitle": "Nova senha",
+    "resetSubtitle": "Digite o código e sua nova senha",
+    "codePlaceholder": "Código de 6 dígitos",
+    "newPasswordPlaceholder": "Nova senha",
+    "resetPassword": "Redefinir senha",
+    "codeSent": "Código enviado para seu e-mail",
+    "resetSuccess": "Senha redefinida com sucesso!",
+    "resetError": "Código inválido ou expirado"
   },
   "home": {
     "greeting": "Olá, {{name}}",
@@ -679,7 +690,8 @@
       "roles": "Cargos Admin",
       "categories": "Categorias",
       "notifications": "Notificações",
-      "settings": "Configurações"
+      "settings": "Configurações",
+      "legal": "Termos e Políticas"
     },
     "banners": {
       "title": "Banners",
@@ -816,6 +828,28 @@
       "permRolesManage": "Gerenciar cargos",
       "permSettingsView": "Visualizar configurações",
       "permSettingsEdit": "Editar configurações"
+    },
+    "legal": {
+      "title": "Documentos Legais",
+      "subtitle": "Gerencie termos de uso e políticas de privacidade",
+      "newDocument": "Novo Documento",
+      "editDocument": "Editar Documento",
+      "deleteDocument": "Excluir Documento",
+      "deleteConfirm": "Tem certeza que deseja excluir este documento?",
+      "type": "Tipo",
+      "termsOfUse": "Termos de Uso",
+      "privacyPolicy": "Política de Privacidade",
+      "locale": "Idioma",
+      "title_field": "Título",
+      "content": "Conteúdo",
+      "version": "Versão",
+      "active": "Ativo",
+      "noDocuments": "Nenhum documento cadastrado",
+      "loadError": "Erro ao carregar documentos",
+      "saveSuccess": "Documento salvo com sucesso",
+      "saveError": "Erro ao salvar documento",
+      "deleteSuccess": "Documento excluído com sucesso",
+      "deleteError": "Erro ao excluir documento"
     }
   },
   "website": {

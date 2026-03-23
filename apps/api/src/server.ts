@@ -37,6 +37,7 @@ import { geocodingRoutes } from './modules/geocoding/geocoding.routes.js';
 import { proAuthRoutes } from './modules/pro-auth/pro-auth.routes.js';
 import { clientPackageRoutes } from './modules/client-package/client-package.routes.js';
 import { bookingPhotoRoutes } from './modules/booking-photo/booking-photo.routes.js';
+import { legalRoutes } from './modules/legal/legal.routes.js';
 import multipart from '@fastify/multipart';
 
 async function bootstrap() {
@@ -117,6 +118,7 @@ async function bootstrap() {
   await app.register(proAuthRoutes, { prefix: '/api/pro' });
   await app.register(clientPackageRoutes, { prefix: '/api/client-packages' });
   await app.register(bookingPhotoRoutes, { prefix: '/api/booking-photos' });
+  await app.register(legalRoutes, { prefix: '/api/legal' });
 
   // Health check
   app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));

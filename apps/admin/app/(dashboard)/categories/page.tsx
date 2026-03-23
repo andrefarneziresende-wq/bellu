@@ -170,8 +170,13 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Award, Ribbon, Sparkle, Wand2, CircleDot,
 };
 
+// Case-insensitive lookup to handle both 'scissors' (from DB) and 'Scissors' (PascalCase)
+const ICON_MAP_LOWER: Record<string, LucideIcon> = Object.fromEntries(
+  Object.entries(ICON_MAP).map(([k, v]) => [k.toLowerCase(), v])
+);
+
 function getLucideIcon(name: string): LucideIcon | null {
-  return ICON_MAP[name] || null;
+  return ICON_MAP[name] || ICON_MAP_LOWER[name.toLowerCase()] || null;
 }
 
 // Render a Lucide icon from a stored name string

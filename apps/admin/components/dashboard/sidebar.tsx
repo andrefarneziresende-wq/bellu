@@ -17,6 +17,7 @@ import {
   Shield,
   ShieldCheck,
   Settings,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n';
@@ -37,6 +38,7 @@ const navigation = [
   { key: 'admins', href: '/admin-users', icon: Shield },
   { key: 'roles', href: '/admin-roles', icon: ShieldCheck },
   { key: 'settings', href: '/settings', icon: Settings },
+  { key: 'legal', href: '/legal', icon: FileText },
 ];
 
 export function Sidebar() {

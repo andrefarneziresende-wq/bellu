@@ -67,6 +67,36 @@ export const authApi = {
     }),
 
   me: () => request<ApiResponse<User>>('/auth/me'),
+
+  googleSignIn: (data: { idToken: string; countryId: string; locale: string }) =>
+    request<ApiResponse<{ user: User; tokens: AuthTokens }>>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  appleSignIn: (data: {
+    identityToken: string;
+    fullName?: { givenName?: string; familyName?: string };
+    email?: string;
+    countryId: string;
+    locale: string;
+  }) =>
+    request<ApiResponse<{ user: User; tokens: AuthTokens }>>('/auth/apple', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  forgotPassword: (data: { email: string }) =>
+    request<ApiResponse<null>>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  resetPassword: (data: { email: string; code: string; newPassword: string }) =>
+    request<ApiResponse<null>>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
 
 // --- Professionals ---
@@ -271,4 +301,10 @@ export const bookingPhotosApi = {
 
   listByPackage: (clientPackageId: string) =>
     request<ApiResponse<BookingPhotoData[]>>(`/booking-photos/package/${clientPackageId}`),
+};
+
+// --- Legal ---
+export const legalApi = {
+  getByType: (type: string, locale: string) =>
+    request<ApiResponse<{ id: string; title: string; content: string; version: string }>>(`/legal/${type}?locale=${locale}`),
 };

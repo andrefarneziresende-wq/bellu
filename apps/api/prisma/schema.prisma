@@ -43,19 +43,21 @@ model Country {
 // ============================================================
 
 model User {
-  id           String   @id @default(uuid())
-  name         String   @db.VarChar(100)
-  email        String?  @unique @db.VarChar(255)
-  phone        String?  @unique @db.VarChar(20)
-  passwordHash String   @map("password_hash") @db.VarChar(255)
-  avatar       String?  @db.VarChar(500)
-  latitude     Float?
-  longitude    Float?
-  countryId    String   @map("country_id")
-  locale       String   @default("pt-BR") @db.VarChar(10)
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(uuid())
+  name          String   @db.VarChar(100)
+  email         String?  @unique @db.VarChar(255)
+  phone         String?  @unique @db.VarChar(20)
+  passwordHash  String?  @map("password_hash") @db.VarChar(255)
+  avatar        String?  @db.VarChar(500)
+  latitude      Float?
+  longitude     Float?
+  countryId     String   @map("country_id")
+  locale        String   @default("pt-BR") @db.VarChar(10)
+  active        Boolean  @default(true)
+  authProvider  String?  @map("auth_provider") @db.VarChar(20) // google, apple, email
+  authProviderId String? @map("auth_provider_id") @db.VarChar(255)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   country       Country        @relation(fields: [countryId], references: [id])
   professional  Professional?
@@ -93,6 +95,41 @@ model RefreshToken {
   @@index([token])
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+// ============================================================
+// Password Reset Token
+// ============================================================
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String   @db.VarChar(255)
+  code      String   @db.VarChar(6) // 6-digit code
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email, code])
+  @@map("password_reset_tokens")
+}
+
+// ============================================================
+// Legal Document (Terms of Use, Privacy Policy, etc.)
+// ============================================================
+
+model LegalDocument {
+  id        String   @id @default(uuid())
+  type      String   @db.VarChar(50) // terms_of_use, privacy_policy
+  locale    String   @db.VarChar(10)
+  title     String   @db.VarChar(200)
+  content   String   @db.Text
+  version   String   @db.VarChar(20)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([type, locale, version])
+  @@map("legal_documents")
 }
 
 // ============================================================

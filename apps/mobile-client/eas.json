@@ -10,12 +10,12 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.bellu.app/api"
+        "EXPO_PUBLIC_API_URL": "https://bellu-api-production.up.railway.app/api"
       }
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.bellu.app/api"
+        "EXPO_PUBLIC_API_URL": "https://bellu-api-production.up.railway.app/api"
       }
     }
   },

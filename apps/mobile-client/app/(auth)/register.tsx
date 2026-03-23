@@ -142,7 +142,9 @@ export default function RegisterScreen() {
             <Button label={t('auth.signup')} onPress={handleRegister} />
           )}
 
-          <Text style={styles.terms}>{t('auth.termsAgreement')}</Text>
+          <Pressable onPress={() => router.push('/legal')}>
+            <Text style={styles.terms}>{t('auth.termsAgreement')}</Text>
+          </Pressable>
         </Animated.View>
 
         {/* Login link */}

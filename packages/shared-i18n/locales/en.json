@@ -39,7 +39,18 @@
     "termsAgreement": "By continuing, you agree to our Terms of Use and Privacy Policy",
     "fillAllFields": "Please fill in all fields",
     "loginError": "Incorrect email or password",
-    "registerError": "Error creating account. Please try again."
+    "registerError": "Error creating account. Please try again.",
+    "forgotTitle": "Forgot password?",
+    "forgotSubtitle": "Enter your email to receive the code",
+    "sendCode": "Send code",
+    "resetTitle": "New password",
+    "resetSubtitle": "Enter the code and your new password",
+    "codePlaceholder": "6-digit code",
+    "newPasswordPlaceholder": "New password",
+    "resetPassword": "Reset password",
+    "codeSent": "Code sent to your email",
+    "resetSuccess": "Password reset successful!",
+    "resetError": "Invalid or expired code"
   },
   "home": {
     "greeting": "Hi, {{name}}",
@@ -679,7 +690,8 @@
       "roles": "Admin Roles",
       "categories": "Categories",
       "notifications": "Notifications",
-      "settings": "Settings"
+      "settings": "Settings",
+      "legal": "Terms & Policies"
     },
     "banners": {
       "title": "Banners",
@@ -816,6 +828,28 @@
       "permRolesManage": "Manage roles",
       "permSettingsView": "View settings",
       "permSettingsEdit": "Edit settings"
+    },
+    "legal": {
+      "title": "Legal Documents",
+      "subtitle": "Manage terms of use and privacy policies",
+      "newDocument": "New Document",
+      "editDocument": "Edit Document",
+      "deleteDocument": "Delete Document",
+      "deleteConfirm": "Are you sure you want to delete this document?",
+      "type": "Type",
+      "termsOfUse": "Terms of Use",
+      "privacyPolicy": "Privacy Policy",
+      "locale": "Language",
+      "title_field": "Title",
+      "content": "Content",
+      "version": "Version",
+      "active": "Active",
+      "noDocuments": "No documents registered",
+      "loadError": "Error loading documents",
+      "saveSuccess": "Document saved successfully",
+      "saveError": "Error saving document",
+      "deleteSuccess": "Document deleted successfully",
+      "deleteError": "Error deleting document"
     }
   },
   "website": {
