@@ -117,7 +117,7 @@ export default function BookingsScreen() {
                 <Card style={styles.bookingCard}>
                   <View style={styles.bookingHeader}>
                     <Text style={styles.bookingProfessional}>{professionalName}</Text>
-                    <Badge text={t(status.key)} variant={status.variant} />
+                    <Badge label={t(status.key)} variant={status.variant} />
                   </View>
                   <Text style={styles.bookingService}>{serviceName}</Text>
                   <View style={styles.bookingDetails}>

@@ -9,16 +9,16 @@ import { useAuthStore } from '../../stores/authStore';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
-const menuItems: { icon: IoniconsName; labelKey: string; route?: string }[] = [
-  { icon: 'calendar-outline', labelKey: 'profile.myBookings' },
-  { icon: 'heart-outline', labelKey: 'profile.favorites' },
-  { icon: 'card-outline', labelKey: 'profile.paymentMethods' },
-  { icon: 'notifications-outline', labelKey: 'profile.notifications' },
-  { icon: 'settings-outline', labelKey: 'profile.settings' },
-  { icon: 'language-outline', labelKey: 'profile.language' },
-  { icon: 'help-circle-outline', labelKey: 'profile.helpSupport' },
-  { icon: 'document-text-outline', labelKey: 'profile.termsOfUse' },
-  { icon: 'shield-checkmark-outline', labelKey: 'profile.privacyPolicy' },
+const menuItems: { icon: IoniconsName; labelKey: string; route: string }[] = [
+  { icon: 'calendar-outline', labelKey: 'profile.myBookings', route: '/(tabs)/bookings' },
+  { icon: 'heart-outline', labelKey: 'profile.favorites', route: '/(tabs)/favorites' },
+  { icon: 'card-outline', labelKey: 'profile.paymentMethods', route: '/payment-methods' },
+  { icon: 'notifications-outline', labelKey: 'profile.notifications', route: '/notifications' },
+  { icon: 'settings-outline', labelKey: 'profile.settings', route: '/settings' },
+  { icon: 'language-outline', labelKey: 'profile.language', route: '/language' },
+  { icon: 'help-circle-outline', labelKey: 'profile.helpSupport', route: '/help' },
+  { icon: 'document-text-outline', labelKey: 'profile.termsOfUse', route: '/legal' },
+  { icon: 'shield-checkmark-outline', labelKey: 'profile.privacyPolicy', route: '/legal' },
 ];
 
 export default function ProfileScreen() {
@@ -48,8 +48,8 @@ export default function ProfileScreen() {
 
         {/* Menu */}
         <Animated.View entering={FadeInDown.delay(200)} style={styles.menu}>
-          {menuItems.map((item, index) => (
-            <Pressable key={item.labelKey} style={styles.menuItem}>
+          {menuItems.map((item) => (
+            <Pressable key={item.labelKey} style={styles.menuItem} onPress={() => router.push(item.route as any)}>
               <Ionicons name={item.icon} size={22} color={colors.text} />
               <Text style={styles.menuLabel}>{t(item.labelKey)}</Text>
               <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />

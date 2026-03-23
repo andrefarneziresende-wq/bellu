@@ -4,7 +4,7 @@ import { colors, radii, typography, spacing } from '../../theme/colors';
 
 interface BadgeProps {
   label: string;
-  variant?: 'default' | 'success' | 'error' | 'accent';
+  variant?: 'default' | 'success' | 'warning' | 'error' | 'accent';
   size?: 'sm' | 'md';
   style?: ViewStyle;
 }
@@ -30,6 +30,9 @@ const styles = StyleSheet.create({
   success: {
     backgroundColor: `${colors.success}20`,
   },
+  warning: {
+    backgroundColor: '#F59E0B20',
+  },
   error: {
     backgroundColor: `${colors.error}20`,
   },
@@ -52,6 +55,9 @@ const styles = StyleSheet.create({
   },
   text_success: {
     color: colors.success,
+  },
+  text_warning: {
+    color: '#F59E0B',
   },
   text_error: {
     color: colors.error,

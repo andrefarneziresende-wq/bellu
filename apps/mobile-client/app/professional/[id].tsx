@@ -113,7 +113,7 @@ export default function ProfessionalScreen() {
           <View style={styles.profileInfo}>
             <View style={styles.nameRow}>
               <Text style={styles.businessName}>{professional.businessName}</Text>
-              {professional.verified && <Badge text={t('professional.verified')} variant="success" />}
+              {professional.verified && <Badge label={t('professional.verified')} variant="success" />}
             </View>
             <Text style={styles.category}>{professional.description || ''}</Text>
             <View style={styles.ratingRow}>
@@ -125,7 +125,7 @@ export default function ProfessionalScreen() {
               <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
               <Text style={styles.metaText}>{professional.address}</Text>
             </View>
-            {professional.active && <Badge text={t('professional.openNow')} variant="success" />}
+            {professional.active && <Badge label={t('professional.openNow')} variant="success" />}
           </View>
         </Animated.View>
 

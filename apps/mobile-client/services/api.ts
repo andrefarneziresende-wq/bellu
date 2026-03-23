@@ -113,8 +113,8 @@ export const professionalsApi = {
   getById: (id: string) =>
     request<ApiResponse<Professional>>(`/professionals/${id}`),
 
-  getFeatured: () =>
-    request<ApiResponse<Professional[]>>('/professionals/featured'),
+  getFeatured: (countryId: string) =>
+    request<ApiResponse<Professional[]>>(`/professionals/featured?countryId=${encodeURIComponent(countryId)}`),
 
   search: (query: string) =>
     request<PaginatedResponse<Professional>>(`/professionals/search?q=${encodeURIComponent(query)}`),

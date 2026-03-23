@@ -170,6 +170,19 @@
     "deleteAccount": "Delete account",
     "version": "Version {{version}}"
   },
+  "settings": {
+    "location": "Location"
+  },
+  "help": {
+    "faq": "Frequently asked questions",
+    "contactEmail": "Contact by email",
+    "contactWhatsapp": "Contact by WhatsApp"
+  },
+  "payment": {
+    "noMethods": "No payment methods",
+    "noMethodsMessage": "Add a payment method to book services.",
+    "addMethod": "Add method"
+  },
   "tabs": {
     "home": "Home",
     "search": "Search",

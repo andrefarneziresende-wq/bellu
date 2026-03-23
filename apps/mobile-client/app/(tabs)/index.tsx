@@ -13,6 +13,22 @@ import { categoriesApi, professionalsApi, notificationsApi } from '../../service
 import { useAuthStore } from '../../stores/authStore';
 import type { Category, Professional } from '@beauty/shared-types';
 
+// Map category icon names (stored as lowercase in DB) to Ionicons names
+const CATEGORY_ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
+  scissors: 'cut-outline',
+  paintbrush: 'brush-outline',
+  eye: 'eye-outline',
+  hand: 'hand-left-outline',
+  sparkles: 'sparkles-outline',
+  heart: 'heart-outline',
+  smile: 'happy-outline',
+  zap: 'flash-outline',
+  star: 'star-outline',
+  flower: 'flower-outline',
+  droplet: 'water-outline',
+  sun: 'sunny-outline',
+};
+
 export default function HomeScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
@@ -31,12 +47,18 @@ export default function HomeScreen() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [catRes, profRes] = await Promise.all([
-          categoriesApi.list(),
-          professionalsApi.getFeatured(),
-        ]);
+        const catRes = await categoriesApi.list();
         setCategories(catRes.data);
-        setProfessionals(profRes.data);
+        // Get user's country to fetch featured professionals
+        const countryId = user?.countryId;
+        if (countryId) {
+          const profRes = await professionalsApi.getFeatured(countryId);
+          setProfessionals(profRes.data);
+        } else {
+          // Try without country filter
+          const profRes = await professionalsApi.list({});
+          setProfessionals(profRes.data?.slice(0, 10) || []);
+        }
       } catch (error: any) {
         // Silently handle — show empty state
       } finally {
@@ -90,7 +112,7 @@ export default function HomeScreen() {
           <Animated.View entering={FadeInDown.delay(200)}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('home.categories')}</Text>
-              <Pressable><Text style={styles.seeAll}>{t('home.seeAll')}</Text></Pressable>
+              <Pressable onPress={() => router.push('/(tabs)/search')}><Text style={styles.seeAll}>{t('home.seeAll')}</Text></Pressable>
             </View>
             <FlatList
               horizontal
@@ -98,14 +120,17 @@ export default function HomeScreen() {
               data={categories}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.categoryList}
-              renderItem={({ item }) => (
-                <Pressable style={styles.categoryItem}>
-                  <View style={styles.categoryIcon}>
-                    <Text style={styles.categoryEmoji}>{item.icon}</Text>
-                  </View>
-                  <Text style={styles.categoryName}>{getCategoryName(item)}</Text>
-                </Pressable>
-              )}
+              renderItem={({ item }) => {
+                const iconName = CATEGORY_ICON_MAP[(item.icon || '').toLowerCase()] || 'grid-outline';
+                return (
+                  <Pressable style={styles.categoryItem} onPress={() => router.push('/(tabs)/search')}>
+                    <View style={styles.categoryIcon}>
+                      <Ionicons name={iconName} size={24} color={colors.primary} />
+                    </View>
+                    <Text style={styles.categoryName}>{getCategoryName(item)}</Text>
+                  </Pressable>
+                );
+              }}
             />
           </Animated.View>
         )}
@@ -114,7 +139,7 @@ export default function HomeScreen() {
         <Animated.View entering={FadeInDown.delay(300)}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t('home.nearYou')}</Text>
-            <Pressable><Text style={styles.seeAll}>{t('home.seeAll')}</Text></Pressable>
+            <Pressable onPress={() => router.push('/(tabs)/search')}><Text style={styles.seeAll}>{t('home.seeAll')}</Text></Pressable>
           </View>
         </Animated.View>
 

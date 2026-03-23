@@ -14,6 +14,17 @@ import { toast } from '../../components/ui/Toast';
 import { categoriesApi, professionalsApi } from '../../services/api';
 import type { Professional, Category } from '@beauty/shared-types';
 
+const GOOGLE_MAPS_API_KEY = 'AIzaSyACtVOd9e3hazjcTbkQT6V5VYoZ2dmt-9c';
+
+interface PlacePrediction {
+  place_id: string;
+  description: string;
+  structured_formatting: {
+    main_text: string;
+    secondary_text: string;
+  };
+}
+
 type SortOption = 'nearest' | 'rating';
 
 const DEFAULT_REGION: Region = {
@@ -50,6 +61,8 @@ export default function SearchScreen() {
   const [nearbyLoading, setNearbyLoading] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>('nearest');
   const [addressQuery, setAddressQuery] = useState('');
+  const [placePredictions, setPlacePredictions] = useState<PlacePrediction[]>([]);
+  const [showPredictions, setShowPredictions] = useState(false);
 
   const getCategoryName = useCallback((cat: Category) => {
     const tr = cat.translations?.find((t) => t.locale === i18n.language);
@@ -87,29 +100,60 @@ export default function SearchScreen() {
     getLocation();
   }, []);
 
-  // Geocode address and search on map
-  const handleSearchAddress = useCallback(async () => {
-    if (addressQuery.trim().length < 3) return;
+  // Google Places Autocomplete
+  useEffect(() => {
+    if (!showMap) return;
+    if (addressQuery.trim().length < 3) {
+      setPlacePredictions([]);
+      setShowPredictions(false);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      try {
+        const locationBias = userLocation
+          ? `&location=${userLocation.lat},${userLocation.lng}&radius=50000`
+          : '';
+        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(addressQuery.trim())}&key=${GOOGLE_MAPS_API_KEY}&language=pt-BR${locationBias}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.predictions) {
+          setPlacePredictions(data.predictions);
+          setShowPredictions(true);
+        }
+      } catch (_) {
+        setPlacePredictions([]);
+      }
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [addressQuery, showMap, userLocation]);
+
+  // Select a place from autocomplete
+  const handleSelectPlace = useCallback(async (placeId: string, description: string) => {
+    setAddressQuery(description);
+    setShowPredictions(false);
+    setPlacePredictions([]);
     setNearbyLoading(true);
+    Keyboard.dismiss();
     try {
-      const geocoded = await Location.geocodeAsync(addressQuery.trim());
-      if (geocoded.length > 0) {
-        const { latitude, longitude } = geocoded[0];
+      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry&key=${GOOGLE_MAPS_API_KEY}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const loc = data.result?.geometry?.location;
+      if (loc) {
         const newRegion: Region = {
-          latitude,
-          longitude,
+          latitude: loc.lat,
+          longitude: loc.lng,
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         };
         setRegion(newRegion);
         mapRef.current?.animateToRegion(newRegion, 500);
-        // Fetch nearby for that location
-        const res = await professionalsApi.list({
-          lat: latitude,
-          lng: longitude,
+        const profRes = await professionalsApi.list({
+          lat: loc.lat,
+          lng: loc.lng,
           ...(activeFilter ? { categoryId: activeFilter } : {}),
         });
-        setNearbyResults(res.data);
+        setNearbyResults(profRes.data);
       } else {
         toast(t('search.addressNotFound'), 'warning');
       }
@@ -118,7 +162,7 @@ export default function SearchScreen() {
     } finally {
       setNearbyLoading(false);
     }
-  }, [addressQuery, activeFilter, t]);
+  }, [activeFilter, t]);
 
   // Text search with debounce (name mode, list view)
   useEffect(() => {
@@ -145,7 +189,7 @@ export default function SearchScreen() {
     }, 500);
 
     return () => clearTimeout(searchTimeout);
-  }, [query, showMap, searchMode]);
+  }, [query, showMap]);
 
   // Fetch nearby when map region changes
   useEffect(() => {
@@ -238,8 +282,10 @@ export default function SearchScreen() {
               placeholder={t('search.addressPlaceholder')}
               placeholderTextColor={colors.textSecondary}
               value={addressQuery}
-              onChangeText={setAddressQuery}
-              onSubmitEditing={handleSearchAddress}
+              onChangeText={(text) => {
+                setAddressQuery(text);
+                if (text.length < 3) setShowPredictions(false);
+              }}
               returnKeyType="search"
             />
           ) : (
@@ -264,6 +310,29 @@ export default function SearchScreen() {
           <Ionicons name={showMap ? 'list' : 'map'} size={22} color={showMap ? colors.white : colors.primary} />
         </Pressable>
       </View>
+
+      {/* Place Autocomplete Suggestions */}
+      {showMap && showPredictions && placePredictions.length > 0 && (
+        <View style={styles.predictionsContainer}>
+          {placePredictions.map((prediction) => (
+            <Pressable
+              key={prediction.place_id}
+              style={styles.predictionRow}
+              onPress={() => handleSelectPlace(prediction.place_id, prediction.description)}
+            >
+              <Ionicons name="location-outline" size={18} color={colors.textSecondary} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.predictionMain} numberOfLines={1}>
+                  {prediction.structured_formatting.main_text}
+                </Text>
+                <Text style={styles.predictionSecondary} numberOfLines={1}>
+                  {prediction.structured_formatting.secondary_text}
+                </Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      )}
 
       {/* Filter chips + Sort */}
       <View>
@@ -448,6 +517,10 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: typography.sizes.md, color: colors.text },
   mapToggle: { width: 48, height: 48, borderRadius: radii.lg, backgroundColor: colors.white, justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 8 },
   mapToggleActive: { backgroundColor: colors.primary },
+  predictionsContainer: { marginHorizontal: spacing.lg, backgroundColor: colors.white, borderRadius: radii.lg, elevation: 4, shadowColor: colors.shadowDark, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 8, overflow: 'hidden', zIndex: 10 },
+  predictionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, paddingHorizontal: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.borderLight, gap: spacing.sm },
+  predictionMain: { fontSize: typography.sizes.sm, fontWeight: typography.weights.medium, color: colors.text },
+  predictionSecondary: { fontSize: typography.sizes.xs, color: colors.textSecondary, marginTop: 1 },
   chipList: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xs, gap: spacing.sm },
   chip: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radii.full, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },

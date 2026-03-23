@@ -10,12 +10,16 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://bellu-api-production.up.railway.app/api"
+        "EXPO_PUBLIC_API_URL": "https://beautyapi-production.up.railway.app/api",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "407242815310-q02a27bisbg17m42tlaprq2cueqnu21h.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "407242815310-bebuimaoa7okd2gr7go0bsg54tt0e9f5.apps.googleusercontent.com"
       }
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://bellu-api-production.up.railway.app/api"
+        "EXPO_PUBLIC_API_URL": "https://beautyapi-production.up.railway.app/api",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "407242815310-q02a27bisbg17m42tlaprq2cueqnu21h.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "407242815310-bebuimaoa7okd2gr7go0bsg54tt0e9f5.apps.googleusercontent.com"
       }
     }
   },

@@ -17,7 +17,14 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.glamapp.client",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.407242815310-q02a27bisbg17m42tlaprq2cueqnu21h"
+            ]
+          }
+        ]
       }
     },
     "android": {

@@ -32,12 +32,36 @@ export default function LoginScreen() {
   const googleIosClientId = extra.googleIosClientId ?? process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   const googleAndroidClientId = extra.googleAndroidClientId ?? process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
   const googleWebClientId = extra.googleWebClientId ?? process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const googleConfigured = !!(googleIosClientId || googleAndroidClientId || googleWebClientId);
 
-  const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
-    iosClientId: googleIosClientId,
-    androidClientId: googleAndroidClientId,
-    webClientId: googleWebClientId,
-  });
+  const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest(
+    googleConfigured
+      ? {
+          iosClientId: googleIosClientId,
+          androidClientId: googleAndroidClientId,
+          webClientId: googleWebClientId,
+        }
+      : { clientId: 'placeholder' }
+  );
+
+  // Handle Google auth response
+  useEffect(() => {
+    if (!googleConfigured || !googleResponse) return;
+    if (googleResponse.type === 'success') {
+      const idToken = googleResponse.authentication?.idToken;
+      if (idToken) {
+        handleGoogleToken(idToken);
+      } else {
+        setSocialLoading(false);
+        toast(t('auth.loginError'), 'error');
+      }
+    } else if (googleResponse.type === 'error') {
+      setSocialLoading(false);
+      toast(t('auth.loginError'), 'error');
+    } else if (googleResponse.type === 'dismiss') {
+      setSocialLoading(false);
+    }
+  }, [googleResponse]);
 
   // Fetch default country on mount
   useEffect(() => {
@@ -53,24 +77,6 @@ export default function LoginScreen() {
     };
     fetchCountry();
   }, []);
-
-  // Handle Google auth response
-  useEffect(() => {
-    if (googleResponse?.type === 'success') {
-      const idToken = googleResponse.authentication?.idToken;
-      if (idToken) {
-        handleGoogleToken(idToken);
-      } else {
-        setSocialLoading(false);
-        toast(t('auth.loginError'), 'error');
-      }
-    } else if (googleResponse?.type === 'error') {
-      setSocialLoading(false);
-      toast(t('auth.loginError'), 'error');
-    } else if (googleResponse?.type === 'dismiss') {
-      setSocialLoading(false);
-    }
-  }, [googleResponse]);
 
   const handleGoogleToken = async (idToken: string) => {
     try {

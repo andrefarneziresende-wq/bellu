@@ -151,8 +151,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     const inAuthGroup = segments[0] === '(auth)';
     const inSplash = segments[0] === 'splash';
     const inOnboarding = segments[0] === 'onboarding';
+    const inLegal = segments[0] === 'legal';
 
-    if (!isAuthenticated && !inAuthGroup && !inSplash && !inOnboarding) {
+    if (!isAuthenticated && !inAuthGroup && !inSplash && !inOnboarding && !inLegal) {
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuthGroup) {
       router.replace('/(tabs)');
