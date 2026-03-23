@@ -28,9 +28,11 @@ export default function BookingsScreen() {
     setLoading(true);
     try {
       const res = await bookingsApi.list();
-      setBookings(res.data);
+      // API returns { bookings: [], pagination: {} }
+      const list = Array.isArray(res.data) ? res.data : (res.data as any)?.bookings ?? [];
+      setBookings(list);
     } catch (error: any) {
-      // Silently handle
+      setBookings([]);
     } finally {
       setLoading(false);
     }
