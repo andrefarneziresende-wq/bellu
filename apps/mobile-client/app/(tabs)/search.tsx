@@ -534,7 +534,9 @@ export default function SearchScreen() {
                         <Text style={styles.ratingText}>{item.rating?.toFixed(1) ?? '0.0'}</Text>
                       </View>
                       {item.distance !== null && (
-                        <Text style={styles.distanceText}>{formatDistance(item.distance)}</Text>
+                        <View style={styles.distanceBadgeSm}>
+                          <Text style={styles.distanceTextSm}>{formatDistance(item.distance)}</Text>
+                        </View>
                       )}
                     </View>
                   </View>
@@ -637,9 +639,11 @@ const styles = StyleSheet.create({
   star: { color: colors.accent, fontSize: 14 },
   ratingText: { fontSize: typography.sizes.sm, fontWeight: typography.weights.semibold, color: colors.text },
   reviewCount: { fontSize: typography.sizes.xs, color: colors.textSecondary },
-  distanceBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.primaryLight || '#F5E6E0', paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.full },
-  distanceBadgeText: { fontSize: typography.sizes.xs, fontWeight: typography.weights.medium, color: colors.primary },
-  distanceText: { fontSize: typography.sizes.xs, fontWeight: typography.weights.medium, color: colors.primary },
+  distanceBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.full },
+  distanceBadgeText: { fontSize: typography.sizes.xs, fontWeight: typography.weights.medium, color: colors.white },
+  distanceText: { fontSize: typography.sizes.xs, fontWeight: typography.weights.bold, color: colors.white },
+  distanceBadgeSm: { backgroundColor: colors.primary, paddingHorizontal: 6, paddingVertical: 1, borderRadius: radii.full },
+  distanceTextSm: { fontSize: 10, fontWeight: typography.weights.bold, color: colors.white },
   // Map styles
   mapContainer: { flex: 1, position: 'relative' },
   map: { flex: 1 },
