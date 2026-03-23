@@ -63,6 +63,7 @@ export default function SearchScreen() {
   const [addressQuery, setAddressQuery] = useState('');
   const [placePredictions, setPlacePredictions] = useState<PlacePrediction[]>([]);
   const [showPredictions, setShowPredictions] = useState(false);
+  const [isGeoSearch, setIsGeoSearch] = useState(false); // true when results came from address selection
 
   const getCategoryName = useCallback((cat: Category) => {
     const tr = cat.translations?.find((t) => t.locale === i18n.language);
@@ -102,6 +103,7 @@ export default function SearchScreen() {
 
   // Google Places Autocomplete (works in both list and map mode)
   useEffect(() => {
+    if (isGeoSearch) return; // Skip autocomplete after address was selected
     const currentQuery = showMap ? addressQuery : query;
     if (currentQuery.trim().length < 3) {
       setPlacePredictions([]);
@@ -125,10 +127,11 @@ export default function SearchScreen() {
       }
     }, 400);
     return () => clearTimeout(timeout);
-  }, [addressQuery, query, showMap, userLocation]);
+  }, [addressQuery, query, showMap, userLocation, isGeoSearch]);
 
   // Select a place from autocomplete (works in both list and map mode)
   const handleSelectPlace = useCallback(async (placeId: string, description: string) => {
+    setIsGeoSearch(true); // Prevent text search and autocomplete from firing
     if (showMap) {
       setAddressQuery(description);
     } else {
@@ -232,10 +235,9 @@ export default function SearchScreen() {
   }, [activeFilter, t, showMap]);
 
   // Text search with debounce (name mode, list view)
-  // Only triggers text search if predictions are NOT showing (user hasn't selected an address)
   useEffect(() => {
     if (showMap) return;
-    if (showPredictions) return; // Don't text-search while showing address suggestions
+    if (isGeoSearch) return; // Results came from address selection, don't overwrite
     const searchTimeout = setTimeout(async () => {
       if (query.trim().length < 2) {
         if (query.trim().length === 0) {
@@ -258,7 +260,7 @@ export default function SearchScreen() {
     }, 500);
 
     return () => clearTimeout(searchTimeout);
-  }, [query, showMap, showPredictions]);
+  }, [query, showMap, isGeoSearch]);
 
   // Fetch nearby when map region changes
   useEffect(() => {
@@ -353,6 +355,7 @@ export default function SearchScreen() {
               value={addressQuery}
               onChangeText={(text) => {
                 setAddressQuery(text);
+                setIsGeoSearch(false); // User is typing again, re-enable autocomplete
                 if (text.length < 3) setShowPredictions(false);
               }}
               returnKeyType="search"
@@ -363,11 +366,24 @@ export default function SearchScreen() {
               placeholder={t('search.placeholder')}
               placeholderTextColor={colors.textSecondary}
               value={query}
-              onChangeText={setQuery}
+              onChangeText={(text) => {
+                setQuery(text);
+                setIsGeoSearch(false); // User is typing again, re-enable autocomplete
+              }}
             />
           )}
           {(showMap ? addressQuery.length > 0 : query.length > 0) && (
-            <Pressable onPress={() => showMap ? setAddressQuery('') : setQuery('')}>
+            <Pressable onPress={() => {
+              if (showMap) {
+                setAddressQuery('');
+              } else {
+                setQuery('');
+                setResults([]);
+                setSearched(false);
+              }
+              setIsGeoSearch(false);
+              setShowPredictions(false);
+            }}>
               <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
             </Pressable>
           )}
