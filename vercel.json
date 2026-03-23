@@ -1,3 +1,3 @@
 {
-  "installCommand": "npm install && npm install react@19.1.0 react-dom@19.1.0 --no-save"
+  "installCommand": "npm install"
 }
