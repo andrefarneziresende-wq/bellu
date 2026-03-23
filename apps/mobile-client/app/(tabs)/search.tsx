@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, Region } from 'react-native-maps';
+import MapView, { Callout, Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { Card } from '../../components/ui/Card';
@@ -451,9 +451,6 @@ export default function SearchScreen() {
                 <Marker
                   key={pro.id}
                   coordinate={{ latitude: Number(pro.latitude), longitude: Number(pro.longitude) }}
-                  title={pro.businessName}
-                  description={pro.address || ''}
-                  onCalloutPress={() => router.push(`/professional/${pro.id}`)}
                 >
                   <View style={styles.markerContainer}>
                     <View style={styles.marker}>
@@ -461,6 +458,20 @@ export default function SearchScreen() {
                     </View>
                     <View style={styles.markerTail} />
                   </View>
+                  <Callout tooltip onPress={() => router.push(`/professional/${pro.id}`)}>
+                    <View style={styles.calloutContainer}>
+                      <Text style={styles.calloutName} numberOfLines={1}>{pro.businessName}</Text>
+                      <View style={styles.calloutRatingRow}>
+                        <Text style={styles.calloutStar}>&#9733;</Text>
+                        <Text style={styles.calloutRating}>{pro.rating?.toFixed(1) ?? '0.0'}</Text>
+                        <Text style={styles.calloutReviews}>({pro.totalReviews ?? 0})</Text>
+                      </View>
+                      {pro.address ? (
+                        <Text style={styles.calloutAddress} numberOfLines={1}>{pro.address}</Text>
+                      ) : null}
+                      <Text style={styles.calloutTap}>{t('search.tapToView')}</Text>
+                    </View>
+                  </Callout>
                 </Marker>
               );
             })}
@@ -624,6 +635,14 @@ const styles = StyleSheet.create({
   markerContainer: { alignItems: 'center' },
   marker: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.white },
   markerTail: { width: 0, height: 0, borderLeftWidth: 6, borderRightWidth: 6, borderTopWidth: 8, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: colors.primary, marginTop: -2 },
+  calloutContainer: { backgroundColor: colors.white, borderRadius: radii.lg, padding: spacing.md, minWidth: 180, maxWidth: 250, elevation: 4, shadowColor: colors.shadowDark, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
+  calloutName: { fontSize: typography.sizes.sm, fontWeight: typography.weights.bold, color: colors.text },
+  calloutRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
+  calloutStar: { color: colors.accent, fontSize: 13 },
+  calloutRating: { fontSize: typography.sizes.xs, fontWeight: typography.weights.semibold, color: colors.text },
+  calloutReviews: { fontSize: typography.sizes.xs, color: colors.textSecondary },
+  calloutAddress: { fontSize: typography.sizes.xs, color: colors.textSecondary, marginTop: 3 },
+  calloutTap: { fontSize: typography.sizes.xs, color: colors.primary, fontWeight: typography.weights.medium, marginTop: 4 },
   mapCardList: { position: 'absolute', bottom: 40, left: 0, right: 0 },
   mapCard: { width: 260, backgroundColor: colors.white, borderRadius: radii.lg, marginRight: spacing.md, flexDirection: 'row', overflow: 'hidden', elevation: 4, shadowColor: colors.shadowDark, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
   mapCardImage: { width: 80, height: 80 },

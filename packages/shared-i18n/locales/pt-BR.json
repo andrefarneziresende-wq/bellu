@@ -211,7 +211,8 @@
     "addressPlaceholder": "Buscar por endereço...",
     "addressNotFound": "Endereço não encontrado",
     "sortNearest": "Mais perto",
-    "sortRating": "Melhor avaliados"
+    "sortRating": "Melhor avaliados",
+    "tapToView": "Toque para ver perfil"
   },
   "favorites": {
     "title": "Favoritos",
