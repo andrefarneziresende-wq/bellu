@@ -657,7 +657,7 @@ const styles = StyleSheet.create({
   calloutReviews: { fontSize: typography.sizes.xs, color: colors.textSecondary },
   calloutAddress: { fontSize: typography.sizes.xs, color: colors.textSecondary, marginTop: 3 },
   calloutTap: { fontSize: typography.sizes.xs, color: colors.primary, fontWeight: typography.weights.medium, marginTop: 4 },
-  mapCardList: { position: 'absolute', bottom: 80, left: 0, right: 0 },
+  mapCardList: { position: 'absolute', bottom: 100, left: 0, right: 0 },
   mapCard: { width: 260, backgroundColor: colors.white, borderRadius: radii.lg, marginRight: spacing.md, flexDirection: 'row', overflow: 'hidden', elevation: 4, shadowColor: colors.shadowDark, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
   mapCardImage: { width: 80, height: 80 },
   mapCardInfo: { flex: 1, padding: spacing.sm, justifyContent: 'center' },
