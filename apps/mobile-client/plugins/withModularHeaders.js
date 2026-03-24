@@ -12,11 +12,26 @@ module.exports = function withModularHeaders(config) {
       );
       let podfile = fs.readFileSync(podfilePath, "utf-8");
 
-      // Add use_modular_headers! after the first "platform :ios" line
-      if (!podfile.includes("use_modular_headers!")) {
+      // Add modular headers ONLY for Firebase pods (not globally)
+      // This avoids "Redefinition of module ReactCommon" error
+      const snippet = `
+  # Firebase requires modular headers for its Swift pods
+  pod 'FirebaseCore', :modular_headers => true
+  pod 'FirebaseCoreInternal', :modular_headers => true
+  pod 'FirebaseCoreExtension', :modular_headers => true
+  pod 'FirebaseInstallations', :modular_headers => true
+  pod 'FirebaseMessaging', :modular_headers => true
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'GoogleDataTransport', :modular_headers => true
+  pod 'nanopb', :modular_headers => true
+  pod 'PromisesObjC', :modular_headers => true
+`;
+
+      if (!podfile.includes("FirebaseCore', :modular_headers")) {
+        // Insert before the first "target" line
         podfile = podfile.replace(
-          /(platform :ios.*\n)/,
-          `$1use_modular_headers!\n`
+          /(target\s+'[^']+'\s+do)/,
+          `${snippet}\n$1`
         );
         fs.writeFileSync(podfilePath, podfile, "utf-8");
       }
