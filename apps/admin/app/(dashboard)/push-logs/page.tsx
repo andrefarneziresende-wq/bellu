@@ -30,7 +30,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: typeof CheckCircle; c
   sent: { label: 'Enviado', icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
   failed: { label: 'Falhou', icon: XCircle, color: 'text-red-600', bg: 'bg-red-50' },
   no_token: { label: 'Sem token', icon: AlertTriangle, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-  not_configured: { label: 'FCM nao config.', icon: WifiOff, color: 'text-gray-600', bg: 'bg-gray-50' },
+  not_configured: { label: 'Push nao config.', icon: WifiOff, color: 'text-gray-600', bg: 'bg-gray-50' },
 };
 
 export default function PushLogsPage() {
@@ -86,7 +86,7 @@ export default function PushLogsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Push Notification Logs</h1>
-          <p className="text-muted-foreground">Historico de envio de notificacoes push (Firebase)</p>
+          <p className="text-muted-foreground">Historico de envio de notificacoes push</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => loadLogs(page, filterStatus)}>
           <RefreshCw className="h-4 w-4 mr-2" />
@@ -143,7 +143,7 @@ export default function PushLogsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.totalNotConfigured}</p>
-                <p className="text-xs text-muted-foreground">FCM nao config.</p>
+                <p className="text-xs text-muted-foreground">Push nao config.</p>
               </div>
             </div>
           </CardContent>

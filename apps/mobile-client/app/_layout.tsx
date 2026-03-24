@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import Animated, { FadeIn, FadeOut, ZoomIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
@@ -15,6 +15,8 @@ import {
   registerForPushNotifications,
   sendPushTokenToServer,
   setupNotificationChannel,
+  onTokenRefresh,
+  onForegroundMessage,
 } from '../services/notifications';
 import '../locales';
 
@@ -129,6 +131,20 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       } catch (e) {
         console.warn('[Push] Setup failed:', e);
       }
+
+      // Listen for FCM token refresh (re-register on server)
+      const unsubTokenRefresh = onTokenRefresh((newToken) => {
+        useAuthStore.getState().setPushToken(newToken);
+        sendPushTokenToServer(newToken);
+      });
+
+      // Listen for FCM messages in foreground (display as local notification)
+      const unsubForeground = onForegroundMessage();
+
+      return () => {
+        unsubTokenRefresh();
+        unsubForeground();
+      };
     }
     if (!isAuthenticated) {
       pushRegistered.current = false;
@@ -144,7 +160,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       } else if (data?.bookingId) {
         router.push(`/(tabs)/bookings`);
       } else if (data?.professionalId) {
-        router.push(`/(tabs)/explore`);
+        router.push(`/(tabs)/search`);
       }
     });
     return () => subscription.remove();

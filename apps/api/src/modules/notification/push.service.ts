@@ -1,10 +1,143 @@
 import { prisma } from '../../config/prisma.js';
+import { env } from '../../config/env.js';
 
 // ============================================================
-// Expo Push Notification Service
+// Firebase Cloud Messaging (FCM v1) — Direct Integration
 // ============================================================
 
-const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+let cachedAccessToken: { token: string; expiresAt: number } | null = null;
+
+/**
+ * Generate a Google OAuth2 access token from service account credentials.
+ * Uses JWT self-signed token exchange (no external libraries needed).
+ */
+async function getAccessToken(): Promise<string> {
+  // Return cached token if still valid (with 60s buffer)
+  if (cachedAccessToken && cachedAccessToken.expiresAt > Date.now() + 60_000) {
+    return cachedAccessToken.token;
+  }
+
+  const clientEmail = env.FCM_CLIENT_EMAIL;
+  const privateKeyPem = env.FCM_PRIVATE_KEY.replace(/\\n/g, '\n');
+
+  if (!clientEmail || !privateKeyPem) {
+    throw new Error('FCM credentials not configured (FCM_CLIENT_EMAIL / FCM_PRIVATE_KEY)');
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const payload = {
+    iss: clientEmail,
+    scope: 'https://www.googleapis.com/auth/firebase.messaging',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600,
+  };
+
+  const encode = (obj: Record<string, unknown>) =>
+    Buffer.from(JSON.stringify(obj)).toString('base64url');
+
+  const unsignedToken = `${encode(header)}.${encode(payload)}`;
+
+  // Import the private key and sign
+  const crypto = await import('node:crypto');
+  const sign = crypto.createSign('RSA-SHA256');
+  sign.update(unsignedToken);
+  const signature = sign.sign(privateKeyPem, 'base64url');
+
+  const jwt = `${unsignedToken}.${signature}`;
+
+  // Exchange JWT for access token
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Failed to get FCM access token: ${res.status} ${errText}`);
+  }
+
+  const data = (await res.json()) as { access_token: string; expires_in: number };
+  cachedAccessToken = {
+    token: data.access_token,
+    expiresAt: Date.now() + data.expires_in * 1000,
+  };
+
+  return cachedAccessToken.token;
+}
+
+interface FCMResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+}
+
+/**
+ * Send a single push notification via FCM v1 API.
+ */
+async function sendFCMMessage(
+  token: string,
+  title: string,
+  body: string,
+  data?: Record<string, string>,
+): Promise<FCMResult> {
+  const projectId = env.FCM_PROJECT_ID;
+  if (!projectId) {
+    return { success: false, error: 'FCM_PROJECT_ID not configured' };
+  }
+
+  try {
+    const accessToken = await getAccessToken();
+
+    const res = await fetch(
+      `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: {
+            token,
+            notification: { title, body },
+            data: data || {},
+            android: {
+              priority: 'high',
+              notification: {
+                channelId: 'default',
+                sound: 'default',
+              },
+            },
+            apns: {
+              payload: {
+                aps: {
+                  sound: 'default',
+                  badge: 1,
+                },
+              },
+            },
+          },
+        }),
+      },
+    );
+
+    if (res.ok) {
+      const result = (await res.json()) as { name: string };
+      return { success: true, messageId: result.name };
+    }
+
+    const errBody = await res.text();
+    return { success: false, error: `HTTP ${res.status}: ${errBody}` };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
 
 // ── Push log persistence ─────────────────────────────────────
 
@@ -29,58 +162,6 @@ function savePushLog(entry: {
       sentCount: entry.sentCount,
     },
   }).catch((err) => console.error('[PushLog] Failed to save:', err));
-}
-
-interface ExpoPushMessage {
-  to: string;
-  title: string;
-  body: string;
-  data?: Record<string, string>;
-  sound?: 'default' | null;
-  channelId?: string;
-  priority?: 'default' | 'normal' | 'high';
-}
-
-interface ExpoPushTicket {
-  status: 'ok' | 'error';
-  id?: string;
-  message?: string;
-  details?: { error?: string };
-}
-
-/**
- * Send push notifications via Expo Push Service.
- * Handles both iOS (APNs) and Android (FCM) automatically.
- */
-async function sendExpoPush(messages: ExpoPushMessage[]): Promise<ExpoPushTicket[]> {
-  if (messages.length === 0) return [];
-
-  try {
-    const response = await fetch(EXPO_PUSH_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Accept-Encoding': 'gzip, deflate',
-      },
-      body: JSON.stringify(messages),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('[ExpoPush] API error:', response.status, errText);
-      return messages.map(() => ({ status: 'error' as const, message: `HTTP ${response.status}: ${errText}` }));
-    }
-
-    const result = await response.json() as { data: ExpoPushTicket[] };
-    return result.data || [];
-  } catch (err) {
-    console.error('[ExpoPush] Network error:', err);
-    return messages.map(() => ({
-      status: 'error' as const,
-      message: err instanceof Error ? err.message : String(err),
-    }));
-  }
 }
 
 // ============================================================
@@ -131,6 +212,20 @@ export async function sendPushToUser(userId: string, payload: PushNotificationPa
     },
   });
 
+  // Check if FCM is configured
+  if (!env.FCM_PROJECT_ID || !env.FCM_CLIENT_EMAIL || !env.FCM_PRIVATE_KEY) {
+    savePushLog({
+      userId,
+      title: payload.title,
+      type: payload.type,
+      status: 'not_configured',
+      error: 'FCM credentials not configured on server',
+      tokenCount: 0,
+      sentCount: 0,
+    });
+    return;
+  }
+
   // Get active push tokens for user
   const tokens = await prisma.pushToken.findMany({
     where: { userId, active: true },
@@ -149,42 +244,37 @@ export async function sendPushToUser(userId: string, payload: PushNotificationPa
     return;
   }
 
-  // Build Expo push messages
-  const messages: ExpoPushMessage[] = tokens.map((t) => ({
-    to: t.token,
-    title: payload.title,
-    body: payload.body,
-    data: { type: payload.type, ...payload.data },
-    sound: 'default' as const,
-    channelId: 'default',
-    priority: 'high' as const,
-  }));
-
-  // Send via Expo Push Service
-  const tickets = await sendExpoPush(messages);
-
+  // Send via FCM v1 API to each token
   const errors: string[] = [];
   let sentCount = 0;
 
-  tickets.forEach((ticket, i) => {
-    const tokenPrefix = tokens[i].token.substring(0, 20);
-    if (ticket.status === 'ok') {
+  for (const t of tokens) {
+    const result = await sendFCMMessage(t.token, payload.title, payload.body, {
+      type: payload.type,
+      ...payload.data,
+    });
+
+    if (result.success) {
       sentCount++;
     } else {
-      const errDetail = ticket.details?.error || ticket.message || 'unknown';
-      errors.push(`[${tokenPrefix}…] ${errDetail}`);
+      const tokenPrefix = t.token.substring(0, 20);
+      errors.push(`[${tokenPrefix}…] ${result.error}`);
 
       // Deactivate invalid tokens
-      if (ticket.details?.error === 'DeviceNotRegistered') {
+      if (
+        result.error?.includes('not a valid FCM registration token') ||
+        result.error?.includes('UNREGISTERED') ||
+        result.error?.includes('NOT_FOUND')
+      ) {
         prisma.pushToken.updateMany({
-          where: { token: tokens[i].token },
+          where: { token: t.token },
           data: { active: false },
         }).catch(() => {});
       }
     }
-  });
+  }
 
-  console.log(`[Push] Sent ${sentCount}/${tokens.length} notifications to user ${userId}`);
+  console.log(`[Push/FCM] Sent ${sentCount}/${tokens.length} notifications to user ${userId}`);
 
   savePushLog({
     userId,
@@ -220,10 +310,10 @@ export async function broadcastPush(payload: PushNotificationPayload, countryId?
     select: { id: true },
   });
 
-  console.log(`[Push] Broadcasting to ${users.length} users`);
+  console.log(`[Push/FCM] Broadcasting to ${users.length} users`);
 
   if (users.length === 0) {
-    console.log('[Push] No active users found for broadcast');
+    console.log('[Push/FCM] No active users found for broadcast');
     return { userCount: 0 };
   }
 
@@ -255,7 +345,7 @@ export async function sendPushToProClients(
   });
 
   const userIds = bookings.map((b) => b.userId).filter(Boolean) as string[];
-  console.log(`[Push] Sending pro notification to ${userIds.length} clients`);
+  console.log(`[Push/FCM] Sending pro notification to ${userIds.length} clients`);
 
   await sendPushToUsers(userIds, payload);
   return { clientCount: userIds.length };
