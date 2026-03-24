@@ -65,6 +65,15 @@ export default function NotificationsScreen() {
     fetchNotifications();
   }, [fetchNotifications]);
 
+  // Auto-mark all as read when the screen is opened
+  useEffect(() => {
+    if (!loading && notifications.some((n) => !n.read)) {
+      notificationsApi.markAllRead().then(() => {
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      }).catch(() => {});
+    }
+  }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleRefresh = () => {
     setRefreshing(true);
     fetchNotifications(1, true);
