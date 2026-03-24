@@ -22,13 +22,19 @@ function getGoogleAuth(): GoogleAuth {
 }
 
 async function getAccessToken(): Promise<string> {
-  const auth = getGoogleAuth();
-  const client = await auth.getClient();
-  const token = await client.getAccessToken();
-  if (!token.token) {
-    throw new Error('Failed to get FCM access token');
+  try {
+    const auth = getGoogleAuth();
+    const client = await auth.getClient();
+    const token = await client.getAccessToken();
+    if (!token.token) {
+      throw new Error('Failed to get FCM access token — token is empty');
+    }
+    console.log('[FCM] Got access token, length:', token.token.length);
+    return token.token;
+  } catch (err) {
+    console.error('[FCM] OAuth error:', err);
+    throw err;
   }
-  return token.token;
 }
 
 interface FCMResult {
@@ -53,6 +59,7 @@ async function sendFCMMessage(
 
   try {
     const accessToken = await getAccessToken();
+    console.log(`[FCM] Sending to project=${projectId}, client_email=${env.FCM_CLIENT_EMAIL}, token_prefix=${token.substring(0, 20)}`);
 
     const res = await fetch(
       `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
