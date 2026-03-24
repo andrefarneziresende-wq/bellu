@@ -74,6 +74,7 @@ model User {
   uploadedPhotos BookingPhoto[] @relation("BookingPhotoUploader")
   pushTokens     PushToken[]
   notifications  Notification[]
+  pushLogs       PushLog[]      @relation("PushLogs")
 
   @@index([countryId])
   @@index([email])
@@ -798,6 +799,29 @@ model ScheduledNotification {
 
   @@index([status, scheduledAt])
   @@map("scheduled_notifications")
+}
+
+// ============================================================
+// Push Notification Log (admin visibility)
+// ============================================================
+
+model PushLog {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  title      String   @db.VarChar(200)
+  type       String   @db.VarChar(50)
+  status     String   @db.VarChar(20) // sent, failed, no_token, not_configured
+  error      String?  @db.Text
+  tokenCount Int      @default(0) @map("token_count")
+  sentCount  Int      @default(0) @map("sent_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation("PushLogs", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([userId])
+  @@map("push_logs")
 }
 
 // ============================================================

@@ -720,6 +720,7 @@
       "roles": "Admin Roles",
       "categories": "Categories",
       "notifications": "Notifications",
+      "pushLogs": "Push Logs",
       "settings": "Settings",
       "legal": "Terms & Policies"
     },

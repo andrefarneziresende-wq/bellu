@@ -262,6 +262,49 @@ export async function notificationRoutes(app: FastifyInstance) {
   );
 
   // ============================================================
+  // Admin — Push Notification Logs
+  // ============================================================
+
+  app.get<{ Querystring: { page?: string; status?: string } }>(
+    '/admin/push-logs',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const page = parseInt(request.query.page || '1', 10);
+      const perPage = 50;
+      const where: Record<string, unknown> = {};
+      if (request.query.status) where.status = request.query.status;
+
+      const [logs, total] = await Promise.all([
+        prisma.pushLog.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip: (page - 1) * perPage,
+          take: perPage,
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+          },
+        }),
+        prisma.pushLog.count({ where }),
+      ]);
+
+      // Also get summary stats
+      const [totalSent, totalFailed, totalNoToken, totalNotConfigured] = await Promise.all([
+        prisma.pushLog.count({ where: { status: 'sent' } }),
+        prisma.pushLog.count({ where: { status: 'failed' } }),
+        prisma.pushLog.count({ where: { status: 'no_token' } }),
+        prisma.pushLog.count({ where: { status: 'not_configured' } }),
+      ]);
+
+      return reply.status(200).send({
+        success: true,
+        data: logs,
+        stats: { totalSent, totalFailed, totalNoToken, totalNotConfigured },
+        pagination: { total, page, perPage, totalPages: Math.ceil(total / perPage) },
+      });
+    },
+  );
+
+  // ============================================================
   // Legacy — Email/SMS Reminders
   // ============================================================
 

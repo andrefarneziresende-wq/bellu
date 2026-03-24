@@ -13,6 +13,31 @@ interface FCMMessage {
   android?: { priority: string; notification: { sound: string; channelId: string } };
 }
 
+// ── Push log persistence ─────────────────────────────────────
+
+function savePushLog(entry: {
+  userId: string;
+  title: string;
+  type: string;
+  status: string;
+  error?: string;
+  tokenCount: number;
+  sentCount: number;
+}) {
+  // Fire-and-forget — don't block notification delivery
+  prisma.pushLog.create({
+    data: {
+      userId: entry.userId,
+      title: entry.title,
+      type: entry.type,
+      status: entry.status,
+      error: entry.error || null,
+      tokenCount: entry.tokenCount,
+      sentCount: entry.sentCount,
+    },
+  }).catch((err) => console.error('[PushLog] Failed to save:', err));
+}
+
 let cachedAccessToken: { token: string; expiresAt: number } | null = null;
 
 /**
@@ -157,27 +182,68 @@ export async function sendPushToUser(userId: string, payload: PushNotificationPa
     },
   });
 
+  // Check FCM configuration
+  if (!env.FCM_PROJECT_ID || !env.FCM_CLIENT_EMAIL || !env.FCM_PRIVATE_KEY) {
+    savePushLog({
+
+      userId,
+      title: payload.title,
+      type: payload.type,
+      status: 'not_configured',
+      error: 'FCM credentials not set (FCM_PROJECT_ID, FCM_CLIENT_EMAIL, or FCM_PRIVATE_KEY)',
+      tokenCount: 0,
+      sentCount: 0,
+    });
+    return;
+  }
+
   // Get active push tokens for user
   const tokens = await prisma.pushToken.findMany({
     where: { userId, active: true },
   });
 
-  if (tokens.length === 0) return;
+  if (tokens.length === 0) {
+    savePushLog({
 
+      userId,
+      title: payload.title,
+      type: payload.type,
+      status: 'no_token',
+      error: 'User has no active push tokens',
+      tokenCount: 0,
+      sentCount: 0,
+    });
+    return;
+  }
+
+  const errors: string[] = [];
   const results = await Promise.allSettled(
-    tokens.map((t) =>
-      sendFCMMessage({
+    tokens.map(async (t) => {
+      const ok = await sendFCMMessage({
         token: t.token,
         notification: { title: payload.title, body: payload.body },
         data: { type: payload.type, ...payload.data },
         apns: { payload: { aps: { sound: 'default' } } },
         android: { priority: 'high', notification: { sound: 'default', channelId: 'default' } },
-      }),
-    ),
+      });
+      if (!ok) errors.push(`Token ${t.token.substring(0, 12)}... failed`);
+      return ok;
+    }),
   );
 
   const sent = results.filter((r) => r.status === 'fulfilled' && r.value).length;
   console.log(`[Push] Sent ${sent}/${tokens.length} notifications to user ${userId}`);
+
+  savePushLog({
+    timestamp: new Date().toISOString(),
+    userId,
+    title: payload.title,
+    type: payload.type,
+    status: sent > 0 ? 'sent' : 'failed',
+    error: errors.length > 0 ? errors.join('; ') : undefined,
+    tokenCount: tokens.length,
+    sentCount: sent,
+  });
 }
 
 /**

@@ -153,8 +153,9 @@ export const bookingsApi = {
     }),
 
   cancel: (id: string) =>
-    request<ApiResponse<Booking>>(`/bookings/${id}/cancel`, {
+    request<ApiResponse<Booking>>(`/bookings/${id}/status`, {
       method: 'PATCH',
+      body: JSON.stringify({ status: 'cancelled' }),
     }),
 
   availableSlots: (professionalId: string, date: string) =>
