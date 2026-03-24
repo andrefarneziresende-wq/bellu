@@ -6,10 +6,12 @@ import type { User, AuthTokens } from '@beauty/shared-types';
 interface AuthState {
   user: User | null;
   tokens: AuthTokens | null;
+  pushToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   setUser: (user: User) => void;
   setTokens: (tokens: AuthTokens) => void;
+  setPushToken: (token: string | null) => void;
   login: (user: User, tokens: AuthTokens) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
@@ -20,12 +22,15 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       tokens: null,
+      pushToken: null,
       isAuthenticated: false,
       isLoading: false,
 
       setUser: (user) => set({ user }),
 
       setTokens: (tokens) => set({ tokens }),
+
+      setPushToken: (pushToken) => set({ pushToken }),
 
       login: (user, tokens) =>
         set({

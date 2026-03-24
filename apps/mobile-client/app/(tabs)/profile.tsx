@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { useAuthStore } from '../../stores/authStore';
+import { removePushTokenFromServer } from '../../services/notifications';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -26,7 +27,12 @@ export default function ProfileScreen() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Remove push token from server before clearing auth state
+    const pushToken = useAuthStore.getState().pushToken;
+    if (pushToken) {
+      await removePushTokenFromServer(pushToken).catch(() => {});
+    }
     useAuthStore.getState().logout();
     router.replace('/(auth)/login');
   };

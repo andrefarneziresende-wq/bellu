@@ -121,7 +121,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       try {
         setupNotificationChannel();
         registerForPushNotifications().then((token) => {
-          if (token) sendPushTokenToServer(token);
+          if (token) {
+            useAuthStore.getState().setPushToken(token);
+            sendPushTokenToServer(token);
+          }
         }).catch(() => {});
       } catch (e) {
         console.warn('[Push] Setup failed:', e);
@@ -136,7 +139,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
-      if (data?.bookingId) {
+      if (data?.conversationId) {
+        router.push(`/chat/${data.conversationId}`);
+      } else if (data?.bookingId) {
         router.push(`/(tabs)/bookings`);
       } else if (data?.professionalId) {
         router.push(`/(tabs)/explore`);

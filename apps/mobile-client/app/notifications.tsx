@@ -16,6 +16,7 @@ const TYPE_ICONS: Record<string, { name: keyof typeof Ionicons.glyphMap; color: 
   review_received: { name: 'star-half', color: '#F59E0B' },
   admin_broadcast: { name: 'megaphone', color: '#C4918E' },
   pro_message: { name: 'chatbubble', color: '#06B6D4' },
+  chat_message: { name: 'chatbubble-ellipses', color: '#06B6D4' },
 };
 
 function timeAgo(dateStr: string): string {
@@ -85,17 +86,26 @@ export default function NotificationsScreen() {
   };
 
   const handlePress = async (notification: NotificationData) => {
-    // Mark as read
+    // Mark as read and update local state immediately
     if (!notification.read) {
-      notificationsApi.markRead(notification.id).catch(() => {});
       setNotifications((prev) =>
         prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)),
       );
+      try {
+        await notificationsApi.markRead(notification.id);
+      } catch {
+        // Revert on failure
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notification.id ? { ...n, read: false } : n)),
+        );
+      }
     }
 
-    // Navigate based on type
+    // Navigate based on type/data
     const data = notification.data ? JSON.parse(notification.data) : {};
-    if (data.bookingId) {
+    if (data.conversationId) {
+      router.push(`/chat/${data.conversationId}`);
+    } else if (data.bookingId) {
       router.push('/(tabs)/bookings');
     } else if (data.professionalId) {
       router.push('/(tabs)/search');
