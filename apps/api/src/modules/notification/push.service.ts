@@ -1,6 +1,6 @@
 import { prisma } from '../../config/prisma.js';
 import { env } from '../../config/env.js';
-import { sign } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import http2 from 'http2';
 
 // ============================================================
@@ -19,7 +19,7 @@ function getApnsJwt(): string {
   }
 
   const privateKey = env.APNS_KEY_P8.replace(/\\n/g, '\n');
-  const token = sign({}, privateKey, {
+  const token = jwt.sign({}, privateKey, {
     algorithm: 'ES256',
     keyid: env.APNS_KEY_ID,
     issuer: env.APNS_TEAM_ID,
