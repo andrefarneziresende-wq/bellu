@@ -1,71 +1,34 @@
 import { prisma } from '../../config/prisma.js';
 import { env } from '../../config/env.js';
+import { GoogleAuth } from 'google-auth-library';
 
 // ============================================================
 // Firebase Cloud Messaging (FCM v1) — Direct Integration
 // ============================================================
 
-let cachedAccessToken: { token: string; expiresAt: number } | null = null;
+let googleAuth: GoogleAuth | null = null;
 
-/**
- * Generate a Google OAuth2 access token from service account credentials.
- * Uses JWT self-signed token exchange (no external libraries needed).
- */
+function getGoogleAuth(): GoogleAuth {
+  if (!googleAuth) {
+    googleAuth = new GoogleAuth({
+      credentials: {
+        client_email: env.FCM_CLIENT_EMAIL,
+        private_key: env.FCM_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      },
+      scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+    });
+  }
+  return googleAuth;
+}
+
 async function getAccessToken(): Promise<string> {
-  // Return cached token if still valid (with 60s buffer)
-  if (cachedAccessToken && cachedAccessToken.expiresAt > Date.now() + 60_000) {
-    return cachedAccessToken.token;
+  const auth = getGoogleAuth();
+  const client = await auth.getClient();
+  const token = await client.getAccessToken();
+  if (!token.token) {
+    throw new Error('Failed to get FCM access token');
   }
-
-  const clientEmail = env.FCM_CLIENT_EMAIL;
-  const privateKeyPem = env.FCM_PRIVATE_KEY.replace(/\\n/g, '\n');
-
-  if (!clientEmail || !privateKeyPem) {
-    throw new Error('FCM credentials not configured (FCM_CLIENT_EMAIL / FCM_PRIVATE_KEY)');
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  const header = { alg: 'RS256', typ: 'JWT' };
-  const payload = {
-    iss: clientEmail,
-    scope: 'https://www.googleapis.com/auth/firebase.messaging',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now,
-    exp: now + 3600,
-  };
-
-  const encode = (obj: Record<string, unknown>) =>
-    Buffer.from(JSON.stringify(obj)).toString('base64url');
-
-  const unsignedToken = `${encode(header)}.${encode(payload)}`;
-
-  // Import the private key and sign
-  const crypto = await import('node:crypto');
-  const sign = crypto.createSign('RSA-SHA256');
-  sign.update(unsignedToken);
-  const signature = sign.sign(privateKeyPem, 'base64url');
-
-  const jwt = `${unsignedToken}.${signature}`;
-
-  // Exchange JWT for access token
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to get FCM access token: ${res.status} ${errText}`);
-  }
-
-  const data = (await res.json()) as { access_token: string; expires_in: number };
-  cachedAccessToken = {
-    token: data.access_token,
-    expiresAt: Date.now() + data.expires_in * 1000,
-  };
-
-  return cachedAccessToken.token;
+  return token.token;
 }
 
 interface FCMResult {
