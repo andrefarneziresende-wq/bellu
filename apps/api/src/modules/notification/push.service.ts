@@ -1,48 +1,164 @@
 import { prisma } from '../../config/prisma.js';
 import { env } from '../../config/env.js';
-import { GoogleAuth } from 'google-auth-library';
+import { sign } from 'jsonwebtoken';
+import http2 from 'http2';
 
 // ============================================================
-// Firebase Cloud Messaging (FCM v1) — Direct Integration
+// APNs Direct (iOS) + FCM (Android future)
 // ============================================================
 
-function getGoogleAuth(): GoogleAuth {
-  const privateKey = env.FCM_PRIVATE_KEY.replace(/\\n/g, '\n');
-  return new GoogleAuth({
-    credentials: {
-      client_email: env.FCM_CLIENT_EMAIL,
-      private_key: privateKey,
-    },
-    scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+// ── APNs JWT token cache ─────────────────────────────────────
+
+let apnsJwt: { token: string; issuedAt: number } | null = null;
+
+function getApnsJwt(): string {
+  const now = Math.floor(Date.now() / 1000);
+  // APNs tokens are valid for 1 hour, refresh at 50 minutes
+  if (apnsJwt && now - apnsJwt.issuedAt < 50 * 60) {
+    return apnsJwt.token;
+  }
+
+  const privateKey = env.APNS_KEY_P8.replace(/\\n/g, '\n');
+  const token = sign({}, privateKey, {
+    algorithm: 'ES256',
+    keyid: env.APNS_KEY_ID,
+    issuer: env.APNS_TEAM_ID,
+    expiresIn: '1h',
   });
+
+  apnsJwt = { token, issuedAt: now };
+  return token;
 }
 
-interface FCMResult {
+// ── APNs send ────────────────────────────────────────────────
+
+interface PushResult {
   success: boolean;
   messageId?: string;
   error?: string;
 }
 
 /**
- * Send a single push notification via FCM v1 API.
- * Uses google-auth-library's authorized HTTP client to avoid fetch header issues.
+ * Send a push notification directly to APNs (iOS).
+ * Uses HTTP/2 + JWT authentication with .p8 key.
  */
-async function sendFCMMessage(
+function sendApnsMessage(
+  deviceToken: string,
+  title: string,
+  body: string,
+  data?: Record<string, string>,
+): Promise<PushResult> {
+  return new Promise((resolve) => {
+    const isProduction = env.NODE_ENV === 'production';
+    const host = isProduction
+      ? 'api.push.apple.com'
+      : 'api.sandbox.push.apple.com';
+
+    let client: http2.ClientHttp2Session;
+    try {
+      client = http2.connect(`https://${host}`);
+    } catch (err) {
+      resolve({ success: false, error: `Connection failed: ${err}` });
+      return;
+    }
+
+    client.on('error', (err) => {
+      resolve({ success: false, error: `Connection error: ${err.message}` });
+    });
+
+    const payload = JSON.stringify({
+      aps: {
+        alert: { title, body },
+        sound: 'default',
+        badge: 1,
+      },
+      ...data,
+    });
+
+    const jwt = getApnsJwt();
+
+    const req = client.request({
+      ':method': 'POST',
+      ':path': `/3/device/${deviceToken}`,
+      'authorization': `bearer ${jwt}`,
+      'apns-topic': env.APNS_BUNDLE_ID,
+      'apns-push-type': 'alert',
+      'apns-priority': '10',
+      ':scheme': 'https',
+    });
+
+    // 10 second timeout
+    req.setTimeout(10000, () => {
+      req.close();
+      client.close();
+      resolve({ success: false, error: 'APNs request timeout' });
+    });
+
+    let responseHeaders: http2.IncomingHttpHeaders;
+    let responseData = '';
+
+    req.on('response', (h) => {
+      responseHeaders = h;
+    });
+
+    req.on('data', (chunk: Buffer) => {
+      responseData += chunk.toString();
+    });
+
+    req.on('end', () => {
+      client.close();
+      const status = Number(responseHeaders?.[':status']);
+
+      if (status === 200) {
+        const apnsId = responseHeaders?.['apns-id'] as string;
+        console.log(`[APNs] Success: ${apnsId}`);
+        resolve({ success: true, messageId: apnsId });
+      } else {
+        console.error(`[APNs] Error ${status}: ${responseData}`);
+        resolve({ success: false, error: `HTTP ${status}: ${responseData}` });
+      }
+    });
+
+    req.on('error', (err) => {
+      client.close();
+      resolve({ success: false, error: `Request error: ${err.message}` });
+    });
+
+    req.write(payload);
+    req.end();
+  });
+}
+
+// ── FCM send (for Android future) ───────────────────────────
+
+// Lazy import google-auth-library only when needed for Android
+let _googleAuth: import('google-auth-library').GoogleAuth | null = null;
+
+async function sendFcmMessage(
   token: string,
   title: string,
   body: string,
   data?: Record<string, string>,
-): Promise<FCMResult> {
+): Promise<PushResult> {
   const projectId = env.FCM_PROJECT_ID;
-  if (!projectId) {
-    return { success: false, error: 'FCM_PROJECT_ID not configured' };
+  if (!projectId || !env.FCM_CLIENT_EMAIL || !env.FCM_PRIVATE_KEY) {
+    return { success: false, error: 'FCM credentials not configured' };
   }
 
   try {
-    const auth = getGoogleAuth();
-    const client = await auth.getClient();
+    if (!_googleAuth) {
+      const { GoogleAuth } = await import('google-auth-library');
+      _googleAuth = new GoogleAuth({
+        credentials: {
+          client_email: env.FCM_CLIENT_EMAIL,
+          private_key: env.FCM_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        },
+        scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+      });
+    }
+
+    const client = await _googleAuth.getClient();
     const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
-    console.log(`[FCM] Sending via google-auth client, token_prefix=${token.substring(0, 20)}`);
 
     const res = await client.request({
       url,
@@ -54,18 +170,7 @@ async function sendFCMMessage(
           data: data || {},
           android: {
             priority: 'high',
-            notification: {
-              channelId: 'default',
-              sound: 'default',
-            },
-          },
-          apns: {
-            payload: {
-              aps: {
-                sound: 'default',
-                badge: 1,
-              },
-            },
+            notification: { channelId: 'default', sound: 'default' },
           },
         },
       },
@@ -81,11 +186,28 @@ async function sendFCMMessage(
       ? JSON.stringify(error.response.data)
       : error.message || String(err);
     console.error(`[FCM] Error ${status}:`, errBody);
-    return {
-      success: false,
-      error: `HTTP ${status}: ${errBody}`,
-    };
+    return { success: false, error: `HTTP ${status}: ${errBody}` };
   }
+}
+
+// ── Route to correct provider based on platform ─────────────
+
+async function sendPushMessage(
+  token: string,
+  platform: string,
+  title: string,
+  body: string,
+  data?: Record<string, string>,
+): Promise<PushResult> {
+  if (platform === 'ios') {
+    // Extract APNs device token from FCM token if needed
+    // FCM tokens from @react-native-firebase look like: "xxxx:APAyyy"
+    // We need the raw APNs device token for direct APNs delivery
+    // The mobile app should send the APNs token directly
+    return sendApnsMessage(token, title, body, data);
+  }
+  // Android: use FCM
+  return sendFcmMessage(token, title, body, data);
 }
 
 // ── Push log persistence ─────────────────────────────────────
@@ -99,7 +221,6 @@ function savePushLog(entry: {
   tokenCount: number;
   sentCount: number;
 }) {
-  // Fire-and-forget — don't block notification delivery
   prisma.pushLog.create({
     data: {
       userId: entry.userId,
@@ -147,7 +268,7 @@ export async function unregisterPushToken(userId: string, token: string) {
 
 /**
  * Send push notification to a specific user (all their devices).
- * Also creates an in-app notification record.
+ * Routes iOS to APNs direct, Android to FCM.
  */
 export async function sendPushToUser(userId: string, payload: PushNotificationPayload) {
   // Save in-app notification
@@ -161,14 +282,17 @@ export async function sendPushToUser(userId: string, payload: PushNotificationPa
     },
   });
 
-  // Check if FCM is configured
-  if (!env.FCM_PROJECT_ID || !env.FCM_CLIENT_EMAIL || !env.FCM_PRIVATE_KEY) {
+  // Check if APNs or FCM is configured
+  const apnsConfigured = env.APNS_KEY_ID && env.APNS_TEAM_ID && env.APNS_KEY_P8;
+  const fcmConfigured = env.FCM_PROJECT_ID && env.FCM_CLIENT_EMAIL && env.FCM_PRIVATE_KEY;
+
+  if (!apnsConfigured && !fcmConfigured) {
     savePushLog({
       userId,
       title: payload.title,
       type: payload.type,
       status: 'not_configured',
-      error: 'FCM credentials not configured on server',
+      error: 'Push credentials not configured on server',
       tokenCount: 0,
       sentCount: 0,
     });
@@ -193,15 +317,17 @@ export async function sendPushToUser(userId: string, payload: PushNotificationPa
     return;
   }
 
-  // Send via FCM v1 API to each token
   const errors: string[] = [];
   let sentCount = 0;
 
   for (const t of tokens) {
-    const result = await sendFCMMessage(t.token, payload.title, payload.body, {
-      type: payload.type,
-      ...payload.data,
-    });
+    const result = await sendPushMessage(
+      t.token,
+      t.platform,
+      payload.title,
+      payload.body,
+      { type: payload.type, ...payload.data },
+    );
 
     if (result.success) {
       sentCount++;
@@ -211,9 +337,11 @@ export async function sendPushToUser(userId: string, payload: PushNotificationPa
 
       // Deactivate invalid tokens
       if (
-        result.error?.includes('not a valid FCM registration token') ||
+        result.error?.includes('BadDeviceToken') ||
+        result.error?.includes('Unregistered') ||
         result.error?.includes('UNREGISTERED') ||
-        result.error?.includes('NOT_FOUND')
+        result.error?.includes('NOT_FOUND') ||
+        result.error?.includes('not a valid FCM registration token')
       ) {
         prisma.pushToken.updateMany({
           where: { token: t.token },
@@ -223,7 +351,7 @@ export async function sendPushToUser(userId: string, payload: PushNotificationPa
     }
   }
 
-  console.log(`[Push/FCM] Sent ${sentCount}/${tokens.length} notifications to user ${userId}`);
+  console.log(`[Push] Sent ${sentCount}/${tokens.length} notifications to user ${userId}`);
 
   savePushLog({
     userId,
@@ -247,10 +375,8 @@ export async function sendPushToUsers(userIds: string[], payload: PushNotificati
 
 /**
  * Broadcast push notification to ALL active users.
- * Creates in-app notifications for everyone and sends push to those with tokens.
  */
 export async function broadcastPush(payload: PushNotificationPayload, countryId?: string) {
-  // Get ALL active users (not just those with push tokens)
   const where: Record<string, unknown> = { active: true };
   if (countryId) where.countryId = countryId;
 
@@ -259,14 +385,12 @@ export async function broadcastPush(payload: PushNotificationPayload, countryId?
     select: { id: true },
   });
 
-  console.log(`[Push/FCM] Broadcasting to ${users.length} users`);
+  console.log(`[Push] Broadcasting to ${users.length} users`);
 
   if (users.length === 0) {
-    console.log('[Push/FCM] No active users found for broadcast');
     return { userCount: 0 };
   }
 
-  // Send in batches of 50
   const batchSize = 50;
   for (let i = 0; i < users.length; i += batchSize) {
     const batch = users.slice(i, i + batchSize);
@@ -280,13 +404,11 @@ export async function broadcastPush(payload: PushNotificationPayload, countryId?
 
 /**
  * Send push to all clients of a specific professional.
- * Used by pro to notify their clients about promotions, etc.
  */
 export async function sendPushToProClients(
   professionalId: string,
   payload: PushNotificationPayload,
 ) {
-  // Find all users who have booked with this professional
   const bookings = await prisma.booking.findMany({
     where: { professionalId, userId: { not: null } },
     select: { userId: true },
@@ -294,7 +416,7 @@ export async function sendPushToProClients(
   });
 
   const userIds = bookings.map((b) => b.userId).filter(Boolean) as string[];
-  console.log(`[Push/FCM] Sending pro notification to ${userIds.length} clients`);
+  console.log(`[Push] Sending pro notification to ${userIds.length} clients`);
 
   await sendPushToUsers(userIds, payload);
   return { clientCount: userIds.length };

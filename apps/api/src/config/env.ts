@@ -27,10 +27,16 @@ const envSchema = z.object({
   TWILIO_PHONE_NUMBER: z.string().default(''),
   TWILIO_WHATSAPP_NUMBER: z.string().default(''),
 
-  // Firebase Cloud Messaging
+  // Firebase Cloud Messaging (Android)
   FCM_PROJECT_ID: z.string().default(''),
   FCM_CLIENT_EMAIL: z.string().default(''),
   FCM_PRIVATE_KEY: z.string().default(''),
+
+  // APNs Direct (iOS)
+  APNS_KEY_ID: z.string().default(''),
+  APNS_TEAM_ID: z.string().default(''),
+  APNS_BUNDLE_ID: z.string().default('com.glamapp.client'),
+  APNS_KEY_P8: z.string().default(''),
 
   // Payment gateways (optional in dev)
   STRIPE_SECRET_KEY: z.string().default('sk_test_placeholder'),

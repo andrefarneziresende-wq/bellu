@@ -21,8 +21,9 @@ try {
 }
 
 /**
- * Register for push notifications and return the FCM token.
- * Uses @react-native-firebase/messaging for direct FCM integration.
+ * Register for push notifications.
+ * iOS: returns the APNs device token (for direct APNs delivery).
+ * Android: returns the FCM token.
  */
 export async function registerForPushNotifications(): Promise<string | null> {
   if (!Device.isDevice) {
@@ -45,13 +46,23 @@ export async function registerForPushNotifications(): Promise<string | null> {
   await Notifications.requestPermissionsAsync();
 
   try {
-    // Get the FCM registration token (works on both iOS and Android)
-    // On iOS, Firebase automatically maps the APNs token to an FCM token
+    if (Platform.OS === 'ios') {
+      // Get the raw APNs device token for direct APNs delivery
+      const apnsToken = await messaging().getAPNSToken();
+      if (apnsToken) {
+        console.log('[Notifications] APNs token:', apnsToken);
+        return apnsToken;
+      }
+      // Fallback to FCM token if APNs token not available
+      console.warn('[Notifications] APNs token not available, falling back to FCM');
+    }
+
+    // Android: get FCM token
     const fcmToken = await messaging().getToken();
     console.log('[Notifications] FCM token:', fcmToken);
     return fcmToken;
   } catch (error) {
-    console.error('[Notifications] Failed to get FCM token:', error);
+    console.error('[Notifications] Failed to get push token:', error);
     return null;
   }
 }
