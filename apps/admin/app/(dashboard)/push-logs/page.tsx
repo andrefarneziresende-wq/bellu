@@ -40,6 +40,7 @@ export default function PushLogsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filterStatus, setFilterStatus] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadLogs = async (p = 1, status = '') => {
     setLoading(true);
@@ -192,8 +193,13 @@ export default function PushLogsPage() {
                   {logs.map((log) => {
                     const cfg = STATUS_CONFIG[log.status] || STATUS_CONFIG.failed;
                     const Icon = cfg.icon;
+                    const isExpanded = expandedId === log.id;
                     return (
-                      <tr key={log.id} className="border-b last:border-0 hover:bg-muted/50">
+                      <tr
+                        key={log.id}
+                        className="border-b last:border-0 hover:bg-muted/50 cursor-pointer"
+                        onClick={() => setExpandedId(isExpanded ? null : log.id)}
+                      >
                         <td className="py-3 pr-4 whitespace-nowrap text-xs text-muted-foreground">
                           {formatDate(log.createdAt)}
                         </td>
@@ -204,10 +210,9 @@ export default function PushLogsPage() {
                           </span>
                         </td>
                         <td className="py-3 pr-4">
-                          <div className="max-w-[150px] truncate">
-                            <span className="font-medium">{log.user?.name || '—'}</span>
-                            <br />
-                            <span className="text-xs text-muted-foreground">{log.user?.email || log.userId}</span>
+                          <div className="max-w-[150px]">
+                            <span className="font-medium truncate block">{log.user?.name || '—'}</span>
+                            <span className="text-xs text-muted-foreground truncate block">{log.user?.email || log.userId}</span>
                           </div>
                         </td>
                         <td className="py-3 pr-4 max-w-[200px] truncate">{log.title}</td>
@@ -218,9 +223,11 @@ export default function PushLogsPage() {
                           <span className="font-medium">{log.sentCount}</span>
                           <span className="text-muted-foreground">/{log.tokenCount}</span>
                         </td>
-                        <td className="py-3 max-w-[200px]">
+                        <td className="py-3" style={{ maxWidth: isExpanded ? 'none' : 200 }}>
                           {log.error ? (
-                            <span className="text-xs text-red-500 truncate block">{log.error}</span>
+                            <span className={`text-xs text-red-500 ${isExpanded ? 'whitespace-pre-wrap break-all' : 'truncate block'}`}>
+                              {log.error}
+                            </span>
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
                           )}

@@ -92,10 +92,9 @@ async function getFCMAccessToken(): Promise<string> {
 /**
  * Send push notification via FCM v1 HTTP API.
  */
-async function sendFCMMessage(message: FCMMessage): Promise<boolean> {
+async function sendFCMMessage(message: FCMMessage): Promise<{ ok: boolean; error?: string }> {
   if (!env.FCM_PROJECT_ID || !env.FCM_CLIENT_EMAIL || !env.FCM_PRIVATE_KEY) {
-    console.log('[FCM] Not configured, skipping push notification');
-    return false;
+    return { ok: false, error: 'FCM not configured' };
   }
 
   try {
@@ -114,23 +113,31 @@ async function sendFCMMessage(message: FCMMessage): Promise<boolean> {
     );
 
     if (!response.ok) {
-      const err = await response.text();
-      console.error('[FCM] Send failed:', err);
+      const errText = await response.text();
+      console.error('[FCM] Send failed:', errText);
 
       // If token is invalid, deactivate it
-      if (err.includes('UNREGISTERED') || err.includes('INVALID_ARGUMENT')) {
+      if (errText.includes('UNREGISTERED') || errText.includes('INVALID_ARGUMENT')) {
         await prisma.pushToken.updateMany({
           where: { token: message.token },
           data: { active: false },
         });
       }
-      return false;
+
+      // Extract short error from FCM response
+      let shortError = `HTTP ${response.status}`;
+      try {
+        const parsed = JSON.parse(errText);
+        shortError = parsed.error?.message || parsed.error?.status || shortError;
+      } catch { /* use default */ }
+
+      return { ok: false, error: shortError };
     }
 
-    return true;
+    return { ok: true };
   } catch (err) {
     console.error('[FCM] Error sending push:', err);
-    return false;
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
 
@@ -219,15 +226,17 @@ export async function sendPushToUser(userId: string, payload: PushNotificationPa
   const errors: string[] = [];
   const results = await Promise.allSettled(
     tokens.map(async (t) => {
-      const ok = await sendFCMMessage({
+      const result = await sendFCMMessage({
         token: t.token,
         notification: { title: payload.title, body: payload.body },
         data: { type: payload.type, ...payload.data },
         apns: { payload: { aps: { sound: 'default' } } },
         android: { priority: 'high', notification: { sound: 'default', channelId: 'default' } },
       });
-      if (!ok) errors.push(`Token ${t.token.substring(0, 12)}... failed`);
-      return ok;
+      if (!result.ok) {
+        errors.push(`[${t.token.substring(0, 8)}…] ${result.error || 'unknown'}`);
+      }
+      return result.ok;
     }),
   );
 
