@@ -68,15 +68,32 @@ export async function deleteUser(id: string) {
   });
 }
 
-export async function listUsers(_professionalId?: string) {
-  // Return all non-professional users (clients/customers)
-  // We exclude users who have a Professional record (they are providers, not clients)
+export async function listUsers(professionalId?: string) {
+  if (professionalId) {
+    // Return only clients who have bookings with this professional
+    const bookings = await prisma.booking.findMany({
+      where: { professionalId },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+    const clientIds = bookings.map((b) => b.userId);
+
+    if (clientIds.length === 0) return [];
+
+    return prisma.user.findMany({
+      where: { id: { in: clientIds }, active: true },
+      select: userSelect,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // Fallback: return all non-professional users
   const professionals = await prisma.professional.findMany({
     select: { userId: true },
   });
   const proUserIds = professionals.map((p) => p.userId);
 
-  const users = await prisma.user.findMany({
+  return prisma.user.findMany({
     where: {
       active: true,
       ...(proUserIds.length > 0 ? { id: { notIn: proUserIds } } : {}),
@@ -84,8 +101,6 @@ export async function listUsers(_professionalId?: string) {
     select: userSelect,
     orderBy: { createdAt: 'desc' },
   });
-
-  return users;
 }
 
 export async function createUser(data: {
