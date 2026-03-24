@@ -43,7 +43,7 @@ export default function NotificationsPage() {
   const loadScheduled = async () => {
     setLoadingScheduled(true);
     try {
-      const res = await apiFetch('/api/notifications/admin/scheduled');
+      const res = await apiFetch<{ data: ScheduledNotification[] }>('/api/notifications/admin/scheduled');
       setScheduled(res.data || []);
     } catch {
       setScheduled([]);

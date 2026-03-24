@@ -8,8 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Trash2, Loader2, Camera, AlertCircle } from 'lucide-react';
-import { apiFetch } from '@/lib/api';
+import { Plus, Trash2, Loader2, Camera, AlertCircle, Upload, X } from 'lucide-react';
+import { apiFetch, apiUpload } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useTranslation } from '@/lib/i18n';
 
@@ -32,23 +32,6 @@ interface PortfolioFieldErrors {
   beforePhoto?: string;
 }
 
-function validatePortfolioForm(
-  form: { beforePhoto: string; afterPhoto: string },
-  t: (key: string, params?: Record<string, string>) => string,
-): PortfolioFieldErrors {
-  const errors: PortfolioFieldErrors = {};
-  const urlPattern = /^https?:\/\/.+/;
-  if (!form.afterPhoto.trim()) {
-    errors.afterPhoto = t('validation.required');
-  } else if (!urlPattern.test(form.afterPhoto.trim())) {
-    errors.afterPhoto = t('validation.invalidUrl');
-  }
-  if (form.beforePhoto.trim() && !urlPattern.test(form.beforePhoto.trim())) {
-    errors.beforePhoto = t('validation.invalidUrl');
-  }
-  return errors;
-}
-
 export default function PortfolioPage() {
   const [items, setItems] = useState<PortfolioItem[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -62,11 +45,38 @@ export default function PortfolioPage() {
   const toast = useToast();
   const { t, locale } = useTranslation();
 
-  const clearFieldError = (field: keyof PortfolioFieldErrors) => {
-    setFieldErrors((prev) => { const next = { ...prev }; delete next[field]; return next; });
+  const [beforeFile, setBeforeFile] = useState<File | null>(null);
+  const [afterFile, setAfterFile] = useState<File | null>(null);
+  const [beforePreview, setBeforePreview] = useState<string | null>(null);
+  const [afterPreview, setAfterPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const [form, setForm] = useState({ description: '', serviceId: '' });
+
+  const handleFileSelect = (type: 'before' | 'after', file: File | null) => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    if (type === 'before') {
+      setBeforeFile(file);
+      setBeforePreview(url);
+    } else {
+      setAfterFile(file);
+      setAfterPreview(url);
+    }
+    setFieldErrors((prev) => { const next = { ...prev }; delete next[type === 'before' ? 'beforePhoto' : 'afterPhoto']; return next; });
   };
 
-  const [form, setForm] = useState({ beforePhoto: '', afterPhoto: '', description: '', serviceId: '' });
+  const clearFile = (type: 'before' | 'after') => {
+    if (type === 'before') {
+      setBeforeFile(null);
+      if (beforePreview) URL.revokeObjectURL(beforePreview);
+      setBeforePreview(null);
+    } else {
+      setAfterFile(null);
+      if (afterPreview) URL.revokeObjectURL(afterPreview);
+      setAfterPreview(null);
+    }
+  };
 
   const fetchProfessionalId = useCallback(async () => {
     try {
@@ -113,28 +123,45 @@ export default function PortfolioPage() {
   }, [fetchProfessionalId, fetchItems, fetchServices]);
 
   const handleCreate = async () => {
-    const errors = validatePortfolioForm(form, t);
+    const errors: PortfolioFieldErrors = {};
+    if (!afterFile) errors.afterPhoto = t('validation.required');
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
+
     setSubmitting(true);
+    setUploading(true);
     try {
+      // Upload photos to R2
+      let beforePhotoUrl: string | null = null;
+      let afterPhotoUrl: string;
+
+      if (beforeFile) {
+        beforePhotoUrl = await apiUpload(beforeFile, 'portfolio');
+      }
+      afterPhotoUrl = await apiUpload(afterFile!, 'portfolio');
+
+      setUploading(false);
+
       await apiFetch('/api/portfolio', {
         method: 'POST',
         body: JSON.stringify({
-          beforePhoto: form.beforePhoto || null,
-          afterPhoto: form.afterPhoto,
+          beforePhoto: beforePhotoUrl,
+          afterPhoto: afterPhotoUrl,
           description: form.description,
           serviceId: form.serviceId || null,
         }),
       });
       toast.success(t('proDashboard.portfolio.addItem'));
       setCreateOpen(false);
-      setForm({ beforePhoto: '', afterPhoto: '', description: '', serviceId: '' });
+      setForm({ description: '', serviceId: '' });
+      clearFile('before');
+      clearFile('after');
       fetchItems();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setSubmitting(false);
+      setUploading(false);
     }
   };
 
@@ -224,16 +251,49 @@ export default function PortfolioPage() {
         <DialogContent>
           <DialogHeader><DialogTitle>{t('proDashboard.portfolio.addItem')}</DialogTitle></DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} noValidate className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>{t('proDashboard.portfolio.beforePhoto')}</Label>
-              <Input value={form.beforePhoto} onChange={(e) => { setForm((p) => ({ ...p, beforePhoto: e.target.value })); clearFieldError('beforePhoto'); }} placeholder="https://..." className={fieldErrors.beforePhoto ? 'border-brand-error' : ''} />
-              {fieldErrors.beforePhoto && <p className="text-xs text-brand-error">{fieldErrors.beforePhoto}</p>}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Before Photo */}
+              <div className="space-y-2">
+                <Label>{t('proDashboard.portfolio.beforePhoto')}</Label>
+                {beforePreview ? (
+                  <div className="relative aspect-[4/5] overflow-hidden rounded-lg border">
+                    <img src={beforePreview} alt="Antes" className="h-full w-full object-cover" />
+                    <button type="button" onClick={() => clearFile('before')} className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className={`flex aspect-[4/5] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-colors hover:border-primary hover:bg-primary/5 ${fieldErrors.beforePhoto ? 'border-brand-error' : 'border-muted-foreground/30'}`}>
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Foto antes</span>
+                    <span className="text-[10px] text-muted-foreground/60">(opcional)</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect('before', e.target.files?.[0] || null)} />
+                  </label>
+                )}
+              </div>
+
+              {/* After Photo */}
+              <div className="space-y-2">
+                <Label>{t('proDashboard.portfolio.afterPhoto')} *</Label>
+                {afterPreview ? (
+                  <div className="relative aspect-[4/5] overflow-hidden rounded-lg border">
+                    <img src={afterPreview} alt="Depois" className="h-full w-full object-cover" />
+                    <button type="button" onClick={() => clearFile('after')} className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className={`flex aspect-[4/5] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-colors hover:border-primary hover:bg-primary/5 ${fieldErrors.afterPhoto ? 'border-brand-error' : 'border-muted-foreground/30'}`}>
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Foto depois</span>
+                    <span className="text-[10px] text-muted-foreground/60">(obrigatoria)</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect('after', e.target.files?.[0] || null)} />
+                  </label>
+                )}
+                {fieldErrors.afterPhoto && <p className="text-xs text-brand-error">{fieldErrors.afterPhoto}</p>}
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>{t('proDashboard.portfolio.afterPhoto')} *</Label>
-              <Input value={form.afterPhoto} onChange={(e) => { setForm((p) => ({ ...p, afterPhoto: e.target.value })); clearFieldError('afterPhoto'); }} placeholder="https://..." className={fieldErrors.afterPhoto ? 'border-brand-error' : ''} />
-              {fieldErrors.afterPhoto && <p className="text-xs text-brand-error">{fieldErrors.afterPhoto}</p>}
-            </div>
+
             <div className="space-y-2">
               <Label>{t('proDashboard.portfolio.relatedService')}</Label>
               <Select value={form.serviceId} onValueChange={(v) => setForm((p) => ({ ...p, serviceId: v }))}>

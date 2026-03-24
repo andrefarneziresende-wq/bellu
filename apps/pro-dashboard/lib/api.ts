@@ -64,3 +64,28 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 
   return json as T;
 }
+
+/**
+ * Upload a file to R2 via the API.
+ */
+export async function apiUpload(file: File, folder = 'portfolio'): Promise<string> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('pro_token') : null;
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${API_URL}/api/upload?folder=${folder}`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: 'Upload failed' }));
+    throw new ApiError(err.message || 'Upload failed', res.status);
+  }
+
+  const json = await res.json();
+  return json.data?.url;
+}
