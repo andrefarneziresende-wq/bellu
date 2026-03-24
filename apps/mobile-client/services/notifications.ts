@@ -43,31 +43,19 @@ export async function registerForPushNotifications(): Promise<string | null> {
     return null;
   }
 
-  // Get the FCM token (works for both iOS and Android via Expo)
+  // Get the Expo push token (works for both iOS and Android)
+  // Expo Push Service handles APNs/FCM translation automatically
   try {
     const projectId = Constants.expoConfig?.extra?.eas?.projectId;
     const tokenData = await Notifications.getExpoPushTokenAsync({
       projectId,
     });
 
-    // We actually want the device push token for FCM
-    const deviceToken = await Notifications.getDevicePushTokenAsync();
-
-    console.log('[Notifications] Device push token:', deviceToken.data);
-    return deviceToken.data as string;
+    console.log('[Notifications] Expo push token:', tokenData.data);
+    return tokenData.data;
   } catch (error) {
     console.error('[Notifications] Failed to get push token:', error);
-
-    // Fallback to Expo push token
-    try {
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-      const token = await Notifications.getExpoPushTokenAsync({ projectId });
-      console.log('[Notifications] Expo push token:', token.data);
-      return token.data;
-    } catch {
-      console.error('[Notifications] Failed to get any push token');
-      return null;
-    }
+    return null;
   }
 }
 
