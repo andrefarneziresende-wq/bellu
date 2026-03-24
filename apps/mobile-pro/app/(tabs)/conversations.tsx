@@ -16,12 +16,14 @@ import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { colors, spacing, radii } from '../../theme/colors';
 import { conversationsApi, type ConversationData } from '../../services/api';
+import { useUnreadMessages } from '../../stores/unreadStore';
 
 export default function ConversationsTab() {
   const router = useRouter();
   const { t } = useTranslation();
   const [conversations, setConversations] = useState<ConversationData[]>([]);
   const [loading, setLoading] = useState(true);
+  const { refresh: refreshUnread } = useUnreadMessages();
 
   const loadConversations = async () => {
     try {
@@ -37,6 +39,7 @@ export default function ConversationsTab() {
   useFocusEffect(
     useCallback(() => {
       loadConversations();
+      refreshUnread();
     }, []),
   );
 

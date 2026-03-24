@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform, StyleSheet } from 'react-native';
 import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../stores/authStore';
+import { useUnreadMessages } from '../../stores/unreadStore';
 
 // Map each tab to the permissions required to see it
 // Empty array = always visible
@@ -18,6 +20,15 @@ const tabPermissions: Record<string, string[]> = {
 export default function TabLayout() {
   const { t } = useTranslation();
   const hasAnyPermission = useAuthStore((s) => s.hasAnyPermission);
+  const unreadCount = useUnreadMessages((s) => s.count);
+  const refreshUnread = useUnreadMessages((s) => s.refresh);
+
+  // Poll unread count every 30s
+  useEffect(() => {
+    refreshUnread();
+    const interval = setInterval(refreshUnread, 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const canSee = (tab: string) => {
     const perms = tabPermissions[tab] || [];
@@ -78,6 +89,8 @@ export default function TabLayout() {
         name="conversations"
         options={{
           title: t('pro.tabs.conversations', 'Conversas'),
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.primary, fontSize: 10 },
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbubble-outline" size={size} color={color} />
           ),

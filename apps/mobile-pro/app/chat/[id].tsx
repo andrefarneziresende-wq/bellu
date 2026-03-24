@@ -25,6 +25,7 @@ import {
   uploadImage,
   type ConversationMessageData,
 } from '../../services/api';
+import { useUnreadMessages } from '../../stores/unreadStore';
 
 export default function ChatScreen() {
   const { id: conversationId } = useLocalSearchParams<{ id: string }>();
@@ -40,6 +41,7 @@ export default function ChatScreen() {
   const [headerName, setHeaderName] = useState('Chat');
   const flatListRef = useRef<FlatList>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const refreshUnread = useUnreadMessages((s) => s.refresh);
 
   // The logged-in user's userId (from proContext or professional)
   const myUserId = professional?.id; // This may not match — we'll use senderId comparison from conversation
@@ -57,8 +59,8 @@ export default function ChatScreen() {
         setHeaderName(conv.client.name);
       }
 
-      // Mark as read
-      conversationsApi.markRead(conversationId).catch(() => {});
+      // Mark as read and refresh unread badge
+      conversationsApi.markRead(conversationId).then(() => refreshUnread()).catch(() => {});
     } catch {
       // keep existing messages
     } finally {
