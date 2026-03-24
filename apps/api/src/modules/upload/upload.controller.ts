@@ -19,9 +19,17 @@ export async function uploadHandler(request: FastifyRequest, reply: FastifyReply
   }
 
   const folder = (request.query as { folder?: string }).folder || 'uploads';
-  const url = await uploadFile(buffer, data.filename, data.mimetype, folder);
 
-  return reply.status(201).send({ success: true, data: { url } });
+  try {
+    const url = await uploadFile(buffer, data.filename, data.mimetype, folder);
+    return reply.status(201).send({ success: true, data: { url } });
+  } catch (err) {
+    console.error('[Upload] R2 upload failed:', err);
+    return reply.status(500).send({
+      success: false,
+      error: err instanceof Error ? err.message : 'Upload failed — check R2 configuration',
+    });
+  }
 }
 
 export async function deleteHandler(request: FastifyRequest, reply: FastifyReply) {
@@ -30,6 +38,14 @@ export async function deleteHandler(request: FastifyRequest, reply: FastifyReply
     return reply.status(400).send({ success: false, error: 'URL is required' });
   }
 
-  await deleteFile(url);
-  return reply.status(200).send({ success: true, data: null });
+  try {
+    await deleteFile(url);
+    return reply.status(200).send({ success: true, data: null });
+  } catch (err) {
+    console.error('[Upload] R2 delete failed:', err);
+    return reply.status(500).send({
+      success: false,
+      error: err instanceof Error ? err.message : 'Delete failed',
+    });
+  }
 }

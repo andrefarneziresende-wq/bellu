@@ -34,8 +34,9 @@ export default function EditProfileScreen() {
     try {
       const uploadRes = await uploadApi.uploadImage(uri, 'avatars');
       setAvatar(uploadRes.data.url);
-    } catch {
-      toast('Erro ao enviar foto', 'error');
+    } catch (err: any) {
+      console.error('[Profile] Photo upload error:', err);
+      toast(err?.message || 'Erro ao enviar foto', 'error');
     } finally {
       setUploadingAvatar(false);
     }

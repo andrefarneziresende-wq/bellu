@@ -101,8 +101,9 @@ export default function ChatScreen() {
       const res = await conversationsApi.sendMessage(conversationId, { imageUrl });
       setMessages((prev) => [...prev, res.data]);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-    } catch {
-      Alert.alert('Erro', 'Nao foi possivel enviar a foto');
+    } catch (err: any) {
+      console.error('[Chat] Photo upload error:', err);
+      Alert.alert('Erro', err?.message || 'Nao foi possivel enviar a foto');
     } finally {
       setUploading(false);
     }
