@@ -365,12 +365,18 @@ export const uploadApi = {
   uploadImage: async (uri: string, folder = 'uploads') => {
     const tokens = useAuthStore.getState().tokens;
     const formData = new FormData();
-    const filename = uri.split('/').pop() || 'photo.jpg';
+
+    // Normalize URI for Android content:// and iOS ph:// schemes
+    const normalizedUri = Platform.OS === 'android' ? uri : uri.replace('file://', '');
+    const rawName = uri.split('/').pop() || '';
+    // Ensure filename has an extension
+    const hasExt = /\.\w+$/.test(rawName);
+    const filename = hasExt ? rawName : `photo_${Date.now()}.jpg`;
     const ext = filename.split('.').pop()?.toLowerCase() || 'jpg';
     const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
 
     formData.append('file', {
-      uri,
+      uri: Platform.OS === 'android' ? uri : normalizedUri,
       name: filename,
       type: mimeType,
     } as unknown as Blob);
@@ -379,13 +385,16 @@ export const uploadApi = {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${tokens?.accessToken}`,
+        // Do NOT set Content-Type — fetch will set multipart boundary automatically
       },
       body: formData,
     });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({ message: 'Upload failed' }));
-      throw new Error(err.message || 'Upload failed');
+      const text = await response.text();
+      let message = 'Upload failed';
+      try { message = JSON.parse(text).message || JSON.parse(text).error || message; } catch {}
+      throw new Error(message);
     }
 
     return response.json() as Promise<ApiResponse<{ url: string }>>;

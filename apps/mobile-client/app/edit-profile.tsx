@@ -29,31 +29,40 @@ export default function EditProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  const handlePickAvatar = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permissao necessaria', 'Precisamos de acesso a galeria para alterar sua foto.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-
-    if (result.canceled || !result.assets[0]) return;
-
+  const pickAndUpload = async (uri: string) => {
     setUploadingAvatar(true);
     try {
-      const uploadRes = await uploadApi.uploadImage(result.assets[0].uri, 'avatars');
+      const uploadRes = await uploadApi.uploadImage(uri, 'avatars');
       setAvatar(uploadRes.data.url);
     } catch {
       toast('Erro ao enviar foto', 'error');
     } finally {
       setUploadingAvatar(false);
     }
+  };
+
+  const handlePickAvatar = () => {
+    Alert.alert('Foto de perfil', 'Escolha uma opcao', [
+      {
+        text: 'Tirar foto',
+        onPress: async () => {
+          const perm = await ImagePicker.requestCameraPermissionsAsync();
+          if (!perm.granted) { Alert.alert('Permissao necessaria', 'Precisamos de acesso a camera.'); return; }
+          const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
+          if (!result.canceled && result.assets[0]) pickAndUpload(result.assets[0].uri);
+        },
+      },
+      {
+        text: 'Escolher da galeria',
+        onPress: async () => {
+          const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (!perm.granted) { Alert.alert('Permissao necessaria', 'Precisamos de acesso a galeria.'); return; }
+          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
+          if (!result.canceled && result.assets[0]) pickAndUpload(result.assets[0].uri);
+        },
+      },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
   };
 
   const handleSave = async () => {

@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -49,15 +50,33 @@ export default function HomeScreen() {
       try {
         const catRes = await categoriesApi.list();
         setCategories(catRes.data);
-        // Get user's country to fetch featured professionals
-        const countryId = user?.countryId;
-        if (countryId) {
-          const profRes = await professionalsApi.getFeatured(countryId);
-          setProfessionals(profRes.data);
-        } else {
-          // Try without country filter
-          const profRes = await professionalsApi.list({});
+
+        // Try to get GPS location for "near you"
+        let lat: number | undefined;
+        let lng: number | undefined;
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status === 'granted') {
+            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            lat = loc.coords.latitude;
+            lng = loc.coords.longitude;
+          }
+        } catch {}
+
+        if (lat && lng) {
+          // Search by real GPS location
+          const profRes = await professionalsApi.list({ lat, lng, page: 1 });
           setProfessionals(profRes.data?.slice(0, 10) || []);
+        } else {
+          // Fallback to country-based featured
+          const countryId = user?.countryId;
+          if (countryId) {
+            const profRes = await professionalsApi.getFeatured(countryId);
+            setProfessionals(profRes.data);
+          } else {
+            const profRes = await professionalsApi.list({});
+            setProfessionals(profRes.data?.slice(0, 10) || []);
+          }
         }
       } catch (error: any) {
         // Silently handle — show empty state

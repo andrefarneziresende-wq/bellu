@@ -91,26 +91,11 @@ export default function ChatScreen() {
     }
   };
 
-  const handleSendImage = async () => {
+  const uploadAndSendImage = async (uri: string) => {
     if (!conversationId) return;
-
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permissao necessaria', 'Precisamos de acesso a galeria para enviar fotos.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.7,
-      allowsEditing: false,
-    });
-
-    if (result.canceled || !result.assets[0]) return;
-
     setUploading(true);
     try {
-      const uploadRes = await uploadApi.uploadImage(result.assets[0].uri, 'chat');
+      const uploadRes = await uploadApi.uploadImage(uri, 'chat');
       const imageUrl = uploadRes.data.url;
 
       const res = await conversationsApi.sendMessage(conversationId, { imageUrl });
@@ -121,6 +106,47 @@ export default function ChatScreen() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleImageOptions = () => {
+    if (!conversationId) return;
+    Alert.alert('Enviar foto', 'Escolha uma opcao', [
+      {
+        text: 'Tirar foto',
+        onPress: async () => {
+          const permission = await ImagePicker.requestCameraPermissionsAsync();
+          if (!permission.granted) {
+            Alert.alert('Permissao necessaria', 'Precisamos de acesso a camera.');
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ['images'],
+            quality: 0.7,
+          });
+          if (!result.canceled && result.assets[0]) {
+            uploadAndSendImage(result.assets[0].uri);
+          }
+        },
+      },
+      {
+        text: 'Escolher da galeria',
+        onPress: async () => {
+          const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (!permission.granted) {
+            Alert.alert('Permissao necessaria', 'Precisamos de acesso a galeria.');
+            return;
+          }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            quality: 0.7,
+          });
+          if (!result.canceled && result.assets[0]) {
+            uploadAndSendImage(result.assets[0].uri);
+          }
+        },
+      },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
   };
 
   const isMyMessage = (msg: ConversationMessageData) => msg.senderId === user?.id;
@@ -208,7 +234,7 @@ export default function ChatScreen() {
 
         {/* Input */}
         <View style={styles.inputContainer}>
-          <Pressable onPress={handleSendImage} style={styles.attachButton} disabled={uploading}>
+          <Pressable onPress={handleImageOptions} style={styles.attachButton} disabled={uploading}>
             {uploading ? (
               <ActivityIndicator size="small" color={colors.primary} />
             ) : (
