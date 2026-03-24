@@ -6,30 +6,30 @@ import { GoogleAuth } from 'google-auth-library';
 // Firebase Cloud Messaging (FCM v1) — Direct Integration
 // ============================================================
 
-let googleAuth: GoogleAuth | null = null;
+async function getAccessToken(): Promise<string> {
+  try {
+    const privateKey = env.FCM_PRIVATE_KEY.replace(/\\n/g, '\n');
+    console.log('[FCM] client_email:', env.FCM_CLIENT_EMAIL);
+    console.log('[FCM] private_key starts with:', privateKey.substring(0, 40));
+    console.log('[FCM] private_key length:', privateKey.length);
+    console.log('[FCM] private_key has real newlines:', privateKey.includes('\n'));
 
-function getGoogleAuth(): GoogleAuth {
-  if (!googleAuth) {
-    googleAuth = new GoogleAuth({
+    // Create fresh GoogleAuth every time to avoid stale token cache
+    const auth = new GoogleAuth({
       credentials: {
         client_email: env.FCM_CLIENT_EMAIL,
-        private_key: env.FCM_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        private_key: privateKey,
       },
       scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
     });
-  }
-  return googleAuth;
-}
 
-async function getAccessToken(): Promise<string> {
-  try {
-    const auth = getGoogleAuth();
     const client = await auth.getClient();
     const token = await client.getAccessToken();
     if (!token.token) {
       throw new Error('Failed to get FCM access token — token is empty');
     }
     console.log('[FCM] Got access token, length:', token.token.length);
+    console.log('[FCM] Access token prefix:', token.token.substring(0, 20));
     return token.token;
   } catch (err) {
     console.error('[FCM] OAuth error:', err);
@@ -59,10 +59,13 @@ async function sendFCMMessage(
 
   try {
     const accessToken = await getAccessToken();
-    console.log(`[FCM] Sending to project=${projectId}, client_email=${env.FCM_CLIENT_EMAIL}, token_prefix=${token.substring(0, 20)}`);
+    const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
+    console.log(`[FCM] URL: ${url}`);
+    console.log(`[FCM] Authorization header: Bearer ${accessToken.substring(0, 30)}...`);
+    console.log(`[FCM] token_prefix=${token.substring(0, 20)}`);
 
     const res = await fetch(
-      `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+      url,
       {
         method: 'POST',
         headers: {
