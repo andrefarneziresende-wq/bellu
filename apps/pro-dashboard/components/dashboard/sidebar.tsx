@@ -16,6 +16,7 @@ import {
   Shield,
   Bell,
   Package,
+  MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n';
@@ -36,6 +37,7 @@ const navigation = [
   { key: 'roles', href: '/roles', icon: Shield, permissions: ['roles.view'] },
   { key: 'reviews', href: '/reviews', icon: Star, permissions: ['reviews.view'] },
   { key: 'promotions', href: '/promotions', icon: Megaphone, permissions: ['promotions.view'] },
+  { key: 'conversations', href: '/conversations', icon: MessageSquare, permissions: [] },
   { key: 'notifications', href: '/notifications', icon: Bell, permissions: [] },
   { key: 'settings', href: '/settings', icon: Settings, permissions: ['settings.view'] },
 ];

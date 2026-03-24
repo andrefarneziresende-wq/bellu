@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -44,11 +44,32 @@ export default function BookingsScreen() {
 
   const upcoming = bookings.filter((b) => {
     const status = (b.status || '').toLowerCase();
-    return status === 'confirmed' || status === 'pending';
+    if (status !== 'confirmed' && status !== 'pending') return false;
+    // Only show as upcoming if the booking date is today or in the future
+    try {
+      const bookingDate = new Date(b.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      bookingDate.setHours(0, 0, 0, 0);
+      return bookingDate >= today;
+    } catch {
+      return true;
+    }
   });
   const past = bookings.filter((b) => {
     const status = (b.status || '').toLowerCase();
-    return status === 'completed' || status === 'cancelled' || status === 'no_show';
+    // Completed, cancelled, no_show always go to past
+    if (status === 'completed' || status === 'cancelled' || status === 'no_show') return true;
+    // Pending/confirmed with past date also go to past
+    try {
+      const bookingDate = new Date(b.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      bookingDate.setHours(0, 0, 0, 0);
+      return bookingDate < today;
+    } catch {
+      return false;
+    }
   });
   const data = tab === 'upcoming' ? upcoming : past;
 
@@ -133,6 +154,35 @@ export default function BookingsScreen() {
                     </View>
                     <Text style={styles.bookingPrice}>{formatPrice(price, currency)}</Text>
                   </View>
+                  {(statusKey === 'confirmed' || statusKey === 'pending') && (
+                    <Pressable
+                      style={styles.cancelBtn}
+                      onPress={() => {
+                        Alert.alert(
+                          t('booking.cancelConfirmTitle'),
+                          t('booking.cancelConfirmMessage'),
+                          [
+                            { text: t('common.no'), style: 'cancel' },
+                            {
+                              text: t('common.yes'),
+                              style: 'destructive',
+                              onPress: async () => {
+                                try {
+                                  await bookingsApi.cancel(item.id);
+                                  fetchBookings();
+                                } catch (err: any) {
+                                  Alert.alert('Erro', err.message || 'Nao foi possivel cancelar');
+                                }
+                              },
+                            },
+                          ],
+                        );
+                      }}
+                    >
+                      <Ionicons name="close-circle-outline" size={16} color={colors.error || '#E74C3C'} />
+                      <Text style={styles.cancelText}>{t('booking.cancelBooking')}</Text>
+                    </Pressable>
+                  )}
                 </Card>
               </Animated.View>
             );
@@ -161,6 +211,8 @@ const styles = StyleSheet.create({
   detailText: { fontSize: typography.sizes.sm, color: colors.textSecondary },
   bookingPrice: { fontSize: typography.sizes.md, fontWeight: typography.weights.bold, color: colors.primary, marginLeft: 'auto' },
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xxxl },
+  cancelBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.md, alignSelf: 'flex-start', paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radii.md, backgroundColor: '#FEE2E2' },
+  cancelText: { fontSize: typography.sizes.xs, fontWeight: typography.weights.semibold, color: colors.error || '#E74C3C' },
   emptyTitle: { fontSize: typography.sizes.lg, fontWeight: typography.weights.semibold, color: colors.text, marginTop: spacing.lg },
   emptyMessage: { fontSize: typography.sizes.sm, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm },
 });

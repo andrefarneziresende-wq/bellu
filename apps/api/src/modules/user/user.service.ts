@@ -76,7 +76,7 @@ export async function listUsers(professionalId?: string) {
       select: { userId: true },
       distinct: ['userId'],
     });
-    const clientIds = bookings.map((b) => b.userId);
+    const clientIds = bookings.map((b) => b.userId).filter(Boolean) as string[];
 
     if (clientIds.length === 0) return [];
 

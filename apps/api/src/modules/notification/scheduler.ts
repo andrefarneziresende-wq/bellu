@@ -30,6 +30,16 @@ export function startReminderScheduler() {
       }
     }
 
+    // Auto-mark past pending/confirmed bookings as NO_SHOW at midnight
+    if (hour === 0) {
+      console.log('[Scheduler] Running auto-complete for past bookings...');
+      try {
+        await autoCompletePastBookings();
+      } catch (err) {
+        console.error('[Scheduler] Error auto-completing bookings:', err);
+      }
+    }
+
     // Process scheduled notifications every hour
     try {
       await processAllScheduledNotifications();
@@ -38,9 +48,10 @@ export function startReminderScheduler() {
     }
   }, 60 * 60 * 1000); // 1 hour
 
-  // Also run scheduled notifications check on startup (after 30s delay)
+  // Also run on startup (after 30s delay)
   setTimeout(() => {
     processAllScheduledNotifications().catch(() => {});
+    autoCompletePastBookings().catch(() => {});
   }, 30_000);
 }
 
@@ -67,6 +78,34 @@ async function sendPushReminders() {
 
   for (const booking of bookings) {
     await sendPushReminder(booking).catch(() => {});
+  }
+}
+
+// ============================================================
+// Auto-complete past bookings
+// ============================================================
+
+/**
+ * Marks PENDING/CONFIRMED bookings whose date has passed as NO_SHOW.
+ * Runs daily at midnight.
+ */
+async function autoCompletePastBookings() {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(23, 59, 59, 999);
+
+  const result = await prisma.booking.updateMany({
+    where: {
+      date: { lt: yesterday },
+      status: { in: ['PENDING', 'CONFIRMED'] },
+    },
+    data: {
+      status: 'NO_SHOW',
+    },
+  });
+
+  if (result.count > 0) {
+    console.log(`[Scheduler] Auto-marked ${result.count} past booking(s) as NO_SHOW`);
   }
 }
 

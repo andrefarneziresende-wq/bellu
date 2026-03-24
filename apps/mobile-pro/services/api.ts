@@ -146,3 +146,89 @@ export interface WorkingHour {
   endTime: string;
   isOff: boolean;
 }
+
+// ─── Conversations (Direct Messaging) ────────────────────────────────────────
+
+export interface ConversationData {
+  id: string;
+  professionalId: string;
+  otherParty: { id: string; name: string; avatar: string | null };
+  lastMessage: string | null;
+  lastMessageAt: string;
+  unreadCount: number;
+}
+
+export interface ConversationMessageData {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  message: string | null;
+  imageUrl: string | null;
+  readAt: string | null;
+  createdAt: string;
+  sender: { id: string; name: string; avatar: string | null };
+}
+
+export const conversationsApi = {
+  list: () =>
+    api.get<{ data: ConversationData[] }>('/conversations'),
+
+  getMessages: (conversationId: string, page = 1) =>
+    api.get<{
+      data: {
+        messages: ConversationMessageData[];
+        conversation: {
+          id: string;
+          client: { id: string; name: string; avatar: string | null };
+          professional: { id: string; businessName: string; avatarPhoto: string | null; userId: string };
+        };
+        pagination: { total: number; page: number; perPage: number; totalPages: number };
+      };
+    }>(`/conversations/${conversationId}/messages?page=${page}`),
+
+  sendMessage: (conversationId: string, data: { message?: string; imageUrl?: string }) =>
+    api.post<{ data: ConversationMessageData }>(`/conversations/${conversationId}/messages`, data as Record<string, unknown>),
+
+  markRead: (conversationId: string) =>
+    api.patch<{ data: { markedAsRead: number } }>(`/conversations/${conversationId}/read`, {}),
+
+  unreadCount: () =>
+    api.get<{ data: { unreadCount: number } }>('/conversations/unread-count'),
+};
+
+// ─── Upload ──────────────────────────────────────────────────────────────────
+
+export const uploadImage = async (uri: string, folder = 'uploads') => {
+  const token = useAuthStore.getState().token;
+  const formData = new FormData();
+
+  const normalizedUri = Platform.OS === 'android' ? uri : uri.replace('file://', '');
+  const rawName = uri.split('/').pop() || '';
+  const hasExt = /\.\w+$/.test(rawName);
+  const filename = hasExt ? rawName : `photo_${Date.now()}.jpg`;
+  const ext = filename.split('.').pop()?.toLowerCase() || 'jpg';
+  const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+
+  formData.append('file', {
+    uri: Platform.OS === 'android' ? uri : normalizedUri,
+    name: filename,
+    type: mimeType,
+  } as unknown as Blob);
+
+  const response = await fetch(`${API_BASE_URL.replace('/api', '')}/api/upload?folder=${folder}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    let message = 'Upload failed';
+    try { message = JSON.parse(text).message || message; } catch {}
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<{ data: { url: string } }>;
+};
