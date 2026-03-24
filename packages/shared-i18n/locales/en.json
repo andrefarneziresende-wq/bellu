@@ -92,6 +92,8 @@
     "noBookingsMessage": "You haven't made any bookings yet",
     "bookingSuccess": "Booking confirmed successfully!",
     "noSlots": "No available time slots for this date",
+    "moreDate": "More dates",
+    "summary": "Summary",
     "source": "Source",
     "sourceApp": "App",
     "sourceManual": "Manual",

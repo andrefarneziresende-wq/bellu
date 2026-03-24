@@ -92,6 +92,8 @@
     "noBookingsMessage": "Aún no has realizado ninguna reserva",
     "bookingSuccess": "¡Reserva confirmada con éxito!",
     "noSlots": "No hay horarios disponibles para esta fecha",
+    "moreDate": "Más fechas",
+    "summary": "Resumen",
     "source": "Origen",
     "sourceApp": "App",
     "sourceManual": "Manual",

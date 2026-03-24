@@ -43,8 +43,12 @@ export default function ProfessionalScreen() {
           portfolioApi.getByProfessional(id),
         ]);
         setServices(servRes.status === 'fulfilled' ? servRes.value.data : []);
-        setReviews(revRes.status === 'fulfilled' ? revRes.value.data : []);
-        setPortfolio(portRes.status === 'fulfilled' ? portRes.value.data : []);
+        // Reviews API returns { reviews: [], pagination: {} } or array
+        const revData = revRes.status === 'fulfilled' ? revRes.value.data : [];
+        setReviews(Array.isArray(revData) ? revData : (revData as any)?.reviews ?? []);
+        // Portfolio API returns { items: [], pagination: {} } or array
+        const portData = portRes.status === 'fulfilled' ? portRes.value.data : [];
+        setPortfolio(Array.isArray(portData) ? portData : (portData as any)?.items ?? []);
       } catch (error: any) {
         // Professional fetch failed
         setProfessional(null);
@@ -69,10 +73,10 @@ export default function ProfessionalScreen() {
     const currentDay = now.getDay(); // 0=Sun, 1=Mon, etc.
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const todayHours = (professional.workingHours as any[]).find(
-      (wh: any) => wh.dayOfWeek === currentDay && wh.isOpen !== false,
+      (wh: any) => wh.dayOfWeek === currentDay && !wh.isOff,
     );
     if (!todayHours) return false;
-    return currentTime >= todayHours.openTime && currentTime <= todayHours.closeTime;
+    return currentTime >= todayHours.startTime && currentTime <= todayHours.endTime;
   })();
 
   const formatPrice = (price: number, currency: string) => {

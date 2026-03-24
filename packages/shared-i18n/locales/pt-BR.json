@@ -92,6 +92,8 @@
     "noBookingsMessage": "Você ainda não fez nenhum agendamento",
     "bookingSuccess": "Agendamento realizado com sucesso!",
     "noSlots": "Nenhum horário disponível para esta data",
+    "moreDate": "Mais datas",
+    "summary": "Resumo",
     "source": "Origem",
     "sourceApp": "Aplicativo",
     "sourceManual": "Manual",
