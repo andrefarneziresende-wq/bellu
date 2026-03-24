@@ -10,7 +10,7 @@ import { colors, spacing, radii, typography } from '../../theme/colors';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { professionalsApi, servicesApi, reviewsApi, portfolioApi } from '../../services/api';
+import { professionalsApi, servicesApi, reviewsApi, portfolioApi, conversationsApi } from '../../services/api';
 import type { Professional, Service, Review, PortfolioItem } from '@beauty/shared-types';
 
 type TabKey = 'services' | 'portfolio' | 'reviews' | 'about';
@@ -245,9 +245,26 @@ export default function ProfessionalScreen() {
         <View style={{ height: 120 }} />
       </ScrollView>
 
-      {/* Floating Book Button */}
+      {/* Floating Buttons */}
       <View style={styles.floatingBtn}>
-        <Button label={t('booking.scheduleButton')} onPress={() => router.push(`/booking/${id}`)} />
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <Pressable
+            style={styles.chatBtn}
+            onPress={async () => {
+              try {
+                const res = await conversationsApi.getOrCreate(id!);
+                router.push(`/chat/${res.data.id}`);
+              } catch {
+                router.push('/chat');
+              }
+            }}
+          >
+            <Ionicons name="chatbubble-outline" size={22} color={colors.primary} />
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <Button label={t('booking.scheduleButton')} onPress={() => router.push(`/booking/${id}`)} />
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -296,4 +313,5 @@ const styles = StyleSheet.create({
   aboutRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
   aboutMeta: { fontSize: typography.sizes.sm, color: colors.textSecondary },
   floatingBtn: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: colors.white, paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: 34, borderTopWidth: 1, borderTopColor: colors.border },
+  chatBtn: { width: 52, height: 52, borderRadius: 26, borderWidth: 1.5, borderColor: colors.primary, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.white },
 });

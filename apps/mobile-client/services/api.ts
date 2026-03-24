@@ -303,6 +303,95 @@ export const bookingPhotosApi = {
     request<ApiResponse<BookingPhotoData[]>>(`/booking-photos/package/${clientPackageId}`),
 };
 
+// --- Conversations (Direct Messaging) ---
+export interface ConversationData {
+  id: string;
+  professionalId: string;
+  otherParty: { id: string; name: string; avatar: string | null };
+  lastMessage: string | null;
+  lastMessageAt: string;
+  unreadCount: number;
+}
+
+export interface ConversationMessageData {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  message: string | null;
+  imageUrl: string | null;
+  readAt: string | null;
+  createdAt: string;
+  sender: { id: string; name: string; avatar: string | null };
+}
+
+export const conversationsApi = {
+  list: () =>
+    request<ApiResponse<ConversationData[]>>('/conversations'),
+
+  getOrCreate: (professionalId: string) =>
+    request<ApiResponse<{ id: string }>>('/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ professionalId }),
+    }),
+
+  getMessages: (conversationId: string, page = 1) =>
+    request<ApiResponse<{
+      messages: ConversationMessageData[];
+      conversation: {
+        id: string;
+        client: { id: string; name: string; avatar: string | null };
+        professional: { id: string; businessName: string; avatarPhoto: string | null; userId: string };
+      };
+      pagination: { total: number; page: number; perPage: number; totalPages: number };
+    }>>(`/conversations/${conversationId}/messages?page=${page}`),
+
+  sendMessage: (conversationId: string, data: { message?: string; imageUrl?: string }) =>
+    request<ApiResponse<ConversationMessageData>>(`/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  markRead: (conversationId: string) =>
+    request<ApiResponse<{ markedAsRead: number }>>(`/conversations/${conversationId}/read`, {
+      method: 'PATCH',
+    }),
+
+  unreadCount: () =>
+    request<ApiResponse<{ unreadCount: number }>>('/conversations/unread-count'),
+};
+
+// --- Upload ---
+export const uploadApi = {
+  uploadImage: async (uri: string, folder = 'uploads') => {
+    const tokens = useAuthStore.getState().tokens;
+    const formData = new FormData();
+    const filename = uri.split('/').pop() || 'photo.jpg';
+    const ext = filename.split('.').pop()?.toLowerCase() || 'jpg';
+    const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+
+    formData.append('file', {
+      uri,
+      name: filename,
+      type: mimeType,
+    } as unknown as Blob);
+
+    const response = await fetch(`${API_BASE_URL}/upload?folder=${folder}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokens?.accessToken}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: 'Upload failed' }));
+      throw new Error(err.message || 'Upload failed');
+    }
+
+    return response.json() as Promise<ApiResponse<{ url: string }>>;
+  },
+};
+
 // --- Legal ---
 export const legalApi = {
   getByType: (type: string, locale: string) =>

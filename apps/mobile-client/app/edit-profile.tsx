@@ -1,14 +1,17 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, radii, typography } from '../theme/colors';
 import { Button } from '../components/ui/Button';
 import { toast } from '../components/ui/Toast';
 import { useAuthStore } from '../stores/authStore';
+import { uploadApi } from '../services/api';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3333/api';
 
@@ -22,7 +25,36 @@ export default function EditProfileScreen() {
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone || '');
+  const [avatar, setAvatar] = useState(user?.avatar || '');
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handlePickAvatar = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permissao necessaria', 'Precisamos de acesso a galeria para alterar sua foto.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+
+    setUploadingAvatar(true);
+    try {
+      const uploadRes = await uploadApi.uploadImage(result.assets[0].uri, 'avatars');
+      setAvatar(uploadRes.data.url);
+    } catch {
+      toast('Erro ao enviar foto', 'error');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -42,6 +74,7 @@ export default function EditProfileScreen() {
           name: name.trim(),
           ...(email.trim() ? { email: email.trim() } : {}),
           ...(phone.trim() ? { phone: phone.trim() } : {}),
+          ...(avatar ? { avatar } : {}),
         }),
       });
 
@@ -81,9 +114,22 @@ export default function EditProfileScreen() {
         <View style={styles.content}>
           {/* Avatar */}
           <Animated.View entering={FadeInDown.delay(50)} style={styles.avatarSection}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={40} color={colors.white} />
-            </View>
+            <Pressable onPress={handlePickAvatar} disabled={uploadingAvatar}>
+              {avatar ? (
+                <Image source={{ uri: avatar }} style={styles.avatar} contentFit="cover" />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Ionicons name="person" size={40} color={colors.white} />
+                </View>
+              )}
+              <View style={styles.cameraIcon}>
+                {uploadingAvatar ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Ionicons name="camera" size={16} color={colors.white} />
+                )}
+              </View>
+            </Pressable>
           </Animated.View>
 
           {/* Form */}
@@ -154,7 +200,9 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: typography.sizes.lg, fontWeight: typography.weights.semibold, color: colors.text },
   content: { flex: 1, paddingHorizontal: spacing.lg },
   avatarSection: { alignItems: 'center', paddingVertical: spacing.xl },
-  avatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  avatar: { width: 100, height: 100, borderRadius: 50 },
+  avatarPlaceholder: { backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  cameraIcon: { position: 'absolute', bottom: 0, right: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.white },
   form: { gap: spacing.lg },
   field: { gap: spacing.xs },
   label: { fontSize: typography.sizes.sm, fontWeight: typography.weights.semibold, color: colors.text, marginLeft: spacing.xs },

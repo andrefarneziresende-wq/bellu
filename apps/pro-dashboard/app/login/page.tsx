@@ -89,7 +89,7 @@ export default function LoginPage() {
         <div className="text-center text-white">
           <img src="/logo.png" alt="Bellu" className="mx-auto mb-4 h-20 w-auto" />
           <h1 className="font-serif text-4xl font-bold">Bellu Pro</h1>
-          <p className="mt-2 text-lg opacity-90">{t('auth.loginSubtitle')}</p>
+          <p className="mt-2 text-lg opacity-90">{t('auth.proLoginSubtitle')}</p>
         </div>
       </div>
 
@@ -103,7 +103,7 @@ export default function LoginPage() {
             </div>
             <h2 className="text-2xl font-bold text-brand-text">{t('auth.loginTitle')}</h2>
             <p className="mt-1 text-sm text-brand-text-secondary">
-              {t('auth.loginSubtitle')}
+              {t('auth.proLoginSubtitle')}
             </p>
           </div>
 

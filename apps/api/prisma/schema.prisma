@@ -67,6 +67,8 @@ model User {
   favorites     Favorite[]
   sentMessages  ChatMessage[]  @relation("MessageSender")
   receivedMessages ChatMessage[] @relation("MessageReceiver")
+  clientConversations  Conversation[]        @relation("ClientConversations")
+  conversationMessages ConversationMessage[] @relation("ConversationMessageSender")
   refreshTokens RefreshToken[]
   clientPackages ClientPackage[]
   uploadedPhotos BookingPhoto[] @relation("BookingPhotoUploader")
@@ -170,6 +172,7 @@ model Professional {
   expenses       Expense[]
   promotions     Promotion[]
   clientPackages ClientPackage[]
+  conversations  Conversation[]
 
   @@index([countryId])
   @@index([status])
@@ -812,4 +815,42 @@ model ContactForm {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("contact_forms")
+}
+
+// ============================================================
+// Conversation (direct messaging between client and professional)
+// ============================================================
+
+model Conversation {
+  id              String    @id @default(uuid())
+  clientId        String    @map("client_id")
+  professionalId  String    @map("professional_id")
+  lastMessageAt   DateTime? @map("last_message_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  client       User                  @relation("ClientConversations", fields: [clientId], references: [id])
+  professional Professional          @relation(fields: [professionalId], references: [id])
+  messages     ConversationMessage[]
+
+  @@unique([clientId, professionalId])
+  @@index([clientId])
+  @@index([professionalId])
+  @@map("conversations")
+}
+
+model ConversationMessage {
+  id             String    @id @default(uuid())
+  conversationId String    @map("conversation_id")
+  senderId       String    @map("sender_id")
+  message        String?   @db.Text
+  imageUrl       String?   @map("image_url") @db.VarChar(500)
+  readAt         DateTime? @map("read_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation("ConversationMessageSender", fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@map("conversation_messages")
 }

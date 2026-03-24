@@ -9,62 +9,121 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { useAuthStore } from '../../stores/authStore';
-
-interface Message {
-  id: string;
-  senderId: string;
-  message: string;
-  createdAt: string;
-  readAt?: string;
-}
+import {
+  conversationsApi,
+  uploadApi,
+  type ConversationMessageData,
+} from '../../services/api';
 
 export default function ChatScreen() {
-  const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
+  const { id: conversationId } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ConversationMessageData[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [headerName, setHeaderName] = useState('Chat');
   const flatListRef = useRef<FlatList>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const loadMessages = async () => {
+    if (!conversationId) return;
+    try {
+      const res = await conversationsApi.getMessages(conversationId);
+      const data = res.data;
+      setMessages(data.messages || []);
+
+      // Set header name from conversation info
+      const conv = data.conversation;
+      if (conv) {
+        const isClient = conv.client.id === user?.id;
+        setHeaderName(isClient ? conv.professional.businessName : conv.client.name);
+      }
+
+      // Mark as read
+      conversationsApi.markRead(conversationId).catch(() => {});
+    } catch {
+      // keep existing messages
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // TODO: Fetch messages from /api/chat/:bookingId
-    setLoading(false);
-  }, [bookingId]);
+    loadMessages();
+
+    // Poll for new messages every 5 seconds
+    pollingRef.current = setInterval(loadMessages, 5000);
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [conversationId]);
 
   const handleSend = async () => {
-    if (!inputText.trim() || sending) return;
+    if (!inputText.trim() || sending || !conversationId) return;
 
     const text = inputText.trim();
     setInputText('');
     setSending(true);
 
     try {
-      // TODO: POST /api/chat
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        senderId: user?.id || '',
-        message: text,
-        createdAt: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, newMessage]);
-      flatListRef.current?.scrollToEnd({ animated: true });
+      const res = await conversationsApi.sendMessage(conversationId, { message: text });
+      setMessages((prev) => [...prev, res.data]);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     } catch {
-      // Handle error
+      Alert.alert('Erro', 'Nao foi possivel enviar a mensagem');
+      setInputText(text);
     } finally {
       setSending(false);
     }
   };
 
-  const isMyMessage = (msg: Message) => msg.senderId === user?.id;
+  const handleSendImage = async () => {
+    if (!conversationId) return;
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permissao necessaria', 'Precisamos de acesso a galeria para enviar fotos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.7,
+      allowsEditing: false,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+
+    setUploading(true);
+    try {
+      const uploadRes = await uploadApi.uploadImage(result.assets[0].uri, 'chat');
+      const imageUrl = uploadRes.data.url;
+
+      const res = await conversationsApi.sendMessage(conversationId, { imageUrl });
+      setMessages((prev) => [...prev, res.data]);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    } catch {
+      Alert.alert('Erro', 'Nao foi possivel enviar a foto');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const isMyMessage = (msg: ConversationMessageData) => msg.senderId === user?.id;
 
   if (loading) {
     return (
@@ -83,7 +142,7 @@ export default function ChatScreen() {
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Chat</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>{headerName}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -98,6 +157,7 @@ export default function ChatScreen() {
           data={messages}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.messageList}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Ionicons name="chatbubble-outline" size={48} color={colors.border} />
@@ -112,9 +172,19 @@ export default function ChatScreen() {
                 entering={FadeIn.duration(200)}
                 style={[styles.messageBubble, mine ? styles.myMessage : styles.theirMessage]}
               >
-                <Text style={[styles.messageText, mine && styles.myMessageText]}>
-                  {item.message}
-                </Text>
+                {item.imageUrl && (
+                  <Image
+                    source={{ uri: item.imageUrl }}
+                    style={styles.messageImage}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                )}
+                {item.message && (
+                  <Text style={[styles.messageText, mine && styles.myMessageText]}>
+                    {item.message}
+                  </Text>
+                )}
                 <View style={styles.messageFooter}>
                   <Text style={[styles.messageTime, mine && styles.myMessageTime]}>
                     {new Date(item.createdAt).toLocaleTimeString('pt-BR', {
@@ -138,6 +208,13 @@ export default function ChatScreen() {
 
         {/* Input */}
         <View style={styles.inputContainer}>
+          <Pressable onPress={handleSendImage} style={styles.attachButton} disabled={uploading}>
+            {uploading ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Ionicons name="image-outline" size={24} color={colors.primary} />
+            )}
+          </Pressable>
           <TextInput
             style={styles.textInput}
             value={inputText}
@@ -145,7 +222,7 @@ export default function ChatScreen() {
             placeholder="Digite sua mensagem..."
             placeholderTextColor={colors.textTertiary}
             multiline
-            maxLength={1000}
+            maxLength={2000}
           />
           <Pressable
             onPress={handleSend}
@@ -182,6 +259,8 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.lg,
     fontWeight: typography.weights.semibold,
     color: colors.text,
+    flex: 1,
+    textAlign: 'center',
   },
   chatContainer: { flex: 1 },
   messageList: {
@@ -213,6 +292,12 @@ const styles = StyleSheet.create({
   myMessageText: {
     color: colors.white,
   },
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: radii.md,
+    marginBottom: spacing.xs,
+  },
   messageFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -234,6 +319,12 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     backgroundColor: colors.white,
     gap: spacing.sm,
+  },
+  attachButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   textInput: {
     flex: 1,

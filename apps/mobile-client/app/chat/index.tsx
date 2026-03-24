@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,31 +8,56 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Image } from 'expo-image';
 import { colors, spacing, radii, typography } from '../../theme/colors';
-import { Avatar } from '../../components/ui/Avatar';
-import { useAuthStore } from '../../stores/authStore';
-
-interface ChatConversation {
-  bookingId: string;
-  professionalName: string;
-  professionalAvatar?: string;
-  lastMessage: string;
-  lastMessageAt: string;
-  unreadCount: number;
-}
+import { conversationsApi, type ConversationData } from '../../services/api';
 
 export default function ChatListScreen() {
   const router = useRouter();
-  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [conversations, setConversations] = useState<ConversationData[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const loadConversations = async () => {
+    try {
+      const res = await conversationsApi.list();
+      setConversations(res.data || []);
+    } catch {
+      setConversations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // TODO: Fetch conversations from API
-    setLoading(false);
+    loadConversations();
   }, []);
+
+  // Refresh when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadConversations();
+    }, []),
+  );
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } else if (diffDays === 1) {
+      return 'Ontem';
+    } else if (diffDays < 7) {
+      return date.toLocaleDateString('pt-BR', { weekday: 'short' });
+    }
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  };
 
   if (loading) {
     return (
@@ -59,34 +84,43 @@ export default function ChatListScreen() {
           <Ionicons name="chatbubbles-outline" size={64} color={colors.border} />
           <Text style={styles.emptyTitle}>Sem conversas ainda</Text>
           <Text style={styles.emptyText}>
-            Suas conversas com profissionais de agendamentos ativos aparecerão aqui.
+            Visite a pagina de um profissional e inicie uma conversa.
           </Text>
         </View>
       ) : (
         <FlatList
           data={conversations}
-          keyExtractor={(item) => item.bookingId}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item, index }) => (
             <Animated.View entering={FadeInDown.delay(index * 50)}>
               <Pressable
                 style={styles.chatItem}
-                onPress={() => router.push(`/chat/${item.bookingId}`)}
+                onPress={() => router.push(`/chat/${item.id}`)}
               >
-                <Avatar
-                  source={item.professionalAvatar ? { uri: item.professionalAvatar } : undefined}
-                  size={48}
-                />
+                {item.otherParty.avatar ? (
+                  <Image
+                    source={{ uri: item.otherParty.avatar }}
+                    style={styles.avatar}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                    <Ionicons name="person" size={22} color={colors.white} />
+                  </View>
+                )}
                 <View style={styles.chatInfo}>
                   <View style={styles.chatHeader}>
                     <Text style={styles.chatName} numberOfLines={1}>
-                      {item.professionalName}
+                      {item.otherParty.name}
                     </Text>
-                    <Text style={styles.chatTime}>{item.lastMessageAt}</Text>
+                    {item.lastMessageAt && (
+                      <Text style={styles.chatTime}>{formatTime(item.lastMessageAt)}</Text>
+                    )}
                   </View>
                   <View style={styles.chatPreview}>
                     <Text style={styles.chatMessage} numberOfLines={1}>
-                      {item.lastMessage}
+                      {item.lastMessage || 'Nenhuma mensagem ainda'}
                     </Text>
                     {item.unreadCount > 0 && (
                       <View style={styles.unreadBadge}>
@@ -131,6 +165,16 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     marginBottom: spacing.sm,
     gap: spacing.md,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  avatarPlaceholder: {
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   chatInfo: { flex: 1 },
   chatHeader: {

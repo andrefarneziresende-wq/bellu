@@ -22,6 +22,7 @@ import { favoriteRoutes } from './modules/favorite/favorite.routes.js';
 import { workingHoursRoutes } from './modules/working-hours/working-hours.routes.js';
 import { bannerRoutes } from './modules/banner/banner.routes.js';
 import { chatRoutes } from './modules/chat/chat.routes.js';
+import { conversationRoutes } from './modules/conversation/conversation.routes.js';
 import { adminAuthRoutes } from './modules/admin-auth/admin-auth.routes.js';
 import { uploadRoutes } from './modules/upload/upload.routes.js';
 import { memberRoutes } from './modules/member/member.routes.js';
@@ -104,6 +105,7 @@ async function bootstrap() {
   await app.register(workingHoursRoutes, { prefix: '/api/working-hours' });
   await app.register(bannerRoutes, { prefix: '/api/banners' });
   await app.register(chatRoutes, { prefix: '/api/chat' });
+  await app.register(conversationRoutes, { prefix: '/api/conversations' });
   await app.register(adminAuthRoutes, { prefix: '/api/admin' });
   await app.register(uploadRoutes, { prefix: '/api/upload' });
   await app.register(memberRoutes, { prefix: '/api/members' });
