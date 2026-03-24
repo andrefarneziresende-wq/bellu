@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyA1hbiZF2afJ5o5O4tkMXZwkwqC--Qfa3E</string>
+	<string>AIzaSyD7zQZQXRhRcguM0ThfjV31TwjsIhyF6_c</string>
 	<key>GCM_SENDER_ID</key>
-	<string>1020074065692</string>
+	<string>558037867697</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.glamapp.client</string>
 	<key>PROJECT_ID</key>
-	<string>bellu-app-15a16</string>
+	<string>bellu-test-5a04b</string>
 	<key>STORAGE_BUCKET</key>
-	<string>bellu-app-15a16.firebasestorage.app</string>
+	<string>bellu-test-5a04b.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:1020074065692:ios:53bfb5505de378f73b84d9</string>
+	<string>1:558037867697:ios:4ab860e5b2a55ce8fbd690</string>
 </dict>
 </plist>
