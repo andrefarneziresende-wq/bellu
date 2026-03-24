@@ -41,7 +41,7 @@ export default function ProfileScreen() {
           </View>
           <Text style={styles.name}>{user?.name || 'User'}</Text>
           <Text style={styles.email}>{user?.email || user?.phone || ''}</Text>
-          <Pressable style={styles.editBtn}>
+          <Pressable style={styles.editBtn} onPress={() => router.push('/edit-profile')}>
             <Text style={styles.editBtnText}>{t('profile.editProfile')}</Text>
           </Pressable>
         </Animated.View>

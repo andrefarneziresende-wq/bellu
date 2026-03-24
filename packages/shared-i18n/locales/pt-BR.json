@@ -175,6 +175,18 @@
   "settings": {
     "location": "Localização"
   },
+  "editProfile": {
+    "title": "Editar perfil",
+    "name": "Nome",
+    "namePlaceholder": "Seu nome completo",
+    "email": "E-mail",
+    "emailPlaceholder": "seu@email.com",
+    "phone": "Telefone",
+    "phonePlaceholder": "(11) 99999-9999",
+    "save": "Salvar alterações",
+    "saved": "Perfil atualizado com sucesso!",
+    "nameRequired": "O nome é obrigatório"
+  },
   "help": {
     "faq": "Perguntas frequentes",
     "contactEmail": "Contato por e-mail",

@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '../../shared/auth-middleware.js';
 import { sendBookingReminders, sendBookingNotification } from './reminder.service.js';
+import { processScheduledNotification } from './scheduler.js';
 import {
   registerPushToken,
   unregisterPushToken,
@@ -181,6 +182,81 @@ export async function notificationRoutes(app: FastifyInstance) {
         data: { professionalId: request.proContext!.professionalId },
       });
 
+      return reply.status(200).send({ success: true, data: null });
+    },
+  );
+
+  // ============================================================
+  // Admin — Scheduled Notifications
+  // ============================================================
+
+  // Create scheduled notification
+  app.post<{
+    Body: { title: string; body: string; target?: string; countryId?: string; sendInDays?: number };
+  }>(
+    '/admin/schedule',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const { title, body, target, countryId, sendInDays } = request.body as {
+        title: string;
+        body: string;
+        target?: string;
+        countryId?: string;
+        sendInDays?: number;
+      };
+
+      if (!title || !body) {
+        return reply.status(400).send({ success: false, message: 'Title and body are required' });
+      }
+
+      const scheduledAt = new Date();
+      if (sendInDays && sendInDays > 0) {
+        scheduledAt.setDate(scheduledAt.getDate() + sendInDays);
+        scheduledAt.setHours(10, 0, 0, 0); // Send at 10:00 AM
+      }
+
+      const notification = await prisma.scheduledNotification.create({
+        data: {
+          title,
+          body,
+          target: target || 'client',
+          countryId: countryId || null,
+          scheduledAt,
+          status: sendInDays && sendInDays > 0 ? 'pending' : 'pending',
+        },
+      });
+
+      // If sendInDays is 0 or not set, send immediately
+      if (!sendInDays || sendInDays <= 0) {
+        await processScheduledNotification(notification.id);
+      }
+
+      return reply.status(200).send({ success: true, data: notification });
+    },
+  );
+
+  // List scheduled notifications
+  app.get(
+    '/admin/scheduled',
+    { preHandler: [authenticate] },
+    async (_request, reply) => {
+      const notifications = await prisma.scheduledNotification.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      });
+      return reply.status(200).send({ success: true, data: notifications });
+    },
+  );
+
+  // Cancel scheduled notification
+  app.delete<{ Params: { id: string } }>(
+    '/admin/scheduled/:id',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      await prisma.scheduledNotification.update({
+        where: { id: request.params.id },
+        data: { status: 'cancelled' },
+      });
       return reply.status(200).send({ success: true, data: null });
     },
   );

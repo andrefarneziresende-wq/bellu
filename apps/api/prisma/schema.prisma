@@ -779,6 +779,25 @@ model Notification {
 }
 
 // ============================================================
+// Scheduled Notification (admin broadcast with delay)
+// ============================================================
+
+model ScheduledNotification {
+  id          String   @id @default(uuid())
+  title       String   @db.VarChar(200)
+  body        String   @db.Text // Supports {{name}} tag
+  target      String   @db.VarChar(20) @default("client") // client | professional | all
+  countryId   String?  @map("country_id")
+  scheduledAt DateTime @map("scheduled_at")
+  sentAt      DateTime? @map("sent_at")
+  status      String   @db.VarChar(20) @default("pending") // pending | sent | cancelled
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([status, scheduledAt])
+  @@map("scheduled_notifications")
+}
+
+// ============================================================
 // Contact Form (website)
 // ============================================================
 

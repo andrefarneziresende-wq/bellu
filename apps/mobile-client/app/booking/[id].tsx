@@ -272,6 +272,8 @@ export default function BookingScreen() {
     return `${price.toFixed(2)}`;
   };
 
+  const [showCalendar, setShowCalendar] = useState(false);
+
   const formatDateDisplay = (dateStr: string) => {
     const d = new Date(dateStr + 'T00:00:00');
     return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
@@ -286,7 +288,6 @@ export default function BookingScreen() {
   }
 
   const canConfirm = !!selectedTime && !!selectedService;
-  const [showCalendar, setShowCalendar] = useState(false);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

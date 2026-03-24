@@ -175,6 +175,18 @@
   "settings": {
     "location": "Ubicación"
   },
+  "editProfile": {
+    "title": "Editar perfil",
+    "name": "Nombre",
+    "namePlaceholder": "Tu nombre completo",
+    "email": "Correo",
+    "emailPlaceholder": "tu@correo.com",
+    "phone": "Teléfono",
+    "phonePlaceholder": "+34 600 000 000",
+    "save": "Guardar cambios",
+    "saved": "Perfil actualizado con éxito!",
+    "nameRequired": "El nombre es obligatorio"
+  },
   "help": {
     "faq": "Preguntas frecuentes",
     "contactEmail": "Contacto por correo",

@@ -175,6 +175,18 @@
   "settings": {
     "location": "Location"
   },
+  "editProfile": {
+    "title": "Edit profile",
+    "name": "Name",
+    "namePlaceholder": "Your full name",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "phone": "Phone",
+    "phonePlaceholder": "+1 (555) 000-0000",
+    "save": "Save changes",
+    "saved": "Profile updated successfully!",
+    "nameRequired": "Name is required"
+  },
   "help": {
     "faq": "Frequently asked questions",
     "contactEmail": "Contact by email",
