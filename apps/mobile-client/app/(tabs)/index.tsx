@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { ScrollView, View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
@@ -85,11 +86,16 @@ export default function HomeScreen() {
       }
     };
     fetchData();
-    // Fetch unread notification count
-    notificationsApi.unreadCount()
-      .then((res) => setUnreadCount(res.data?.count || 0))
-      .catch(() => {});
   }, []);
+
+  // Refresh unread count every time the screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      notificationsApi.unreadCount()
+        .then((res) => setUnreadCount(res.data?.count || 0))
+        .catch(() => {});
+    }, []),
+  );
 
   if (loading) {
     return (
