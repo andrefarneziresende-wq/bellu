@@ -235,7 +235,6 @@ export async function sendPushToUser(userId: string, payload: PushNotificationPa
   console.log(`[Push] Sent ${sent}/${tokens.length} notifications to user ${userId}`);
 
   savePushLog({
-    timestamp: new Date().toISOString(),
     userId,
     title: payload.title,
     type: payload.type,
@@ -256,12 +255,12 @@ export async function sendPushToUsers(userIds: string[], payload: PushNotificati
 }
 
 /**
- * Broadcast push notification to ALL users with active tokens.
- * Used by admin for announcements.
+ * Broadcast push notification to ALL active users.
+ * Creates in-app notifications for everyone and sends push to those with tokens.
  */
 export async function broadcastPush(payload: PushNotificationPayload, countryId?: string) {
-  // Get all users with active push tokens
-  const where: Record<string, unknown> = { active: true, pushTokens: { some: { active: true } } };
+  // Get ALL active users (not just those with push tokens)
+  const where: Record<string, unknown> = { active: true };
   if (countryId) where.countryId = countryId;
 
   const users = await prisma.user.findMany({
@@ -270,6 +269,11 @@ export async function broadcastPush(payload: PushNotificationPayload, countryId?
   });
 
   console.log(`[Push] Broadcasting to ${users.length} users`);
+
+  if (users.length === 0) {
+    console.log('[Push] No active users found for broadcast');
+    return { userCount: 0 };
+  }
 
   // Send in batches of 50
   const batchSize = 50;
