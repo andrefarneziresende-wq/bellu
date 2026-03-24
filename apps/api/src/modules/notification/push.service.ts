@@ -6,35 +6,15 @@ import { GoogleAuth } from 'google-auth-library';
 // Firebase Cloud Messaging (FCM v1) — Direct Integration
 // ============================================================
 
-async function getAccessToken(): Promise<string> {
-  try {
-    const privateKey = env.FCM_PRIVATE_KEY.replace(/\\n/g, '\n');
-    console.log('[FCM] client_email:', env.FCM_CLIENT_EMAIL);
-    console.log('[FCM] private_key starts with:', privateKey.substring(0, 40));
-    console.log('[FCM] private_key length:', privateKey.length);
-    console.log('[FCM] private_key has real newlines:', privateKey.includes('\n'));
-
-    // Create fresh GoogleAuth every time to avoid stale token cache
-    const auth = new GoogleAuth({
-      credentials: {
-        client_email: env.FCM_CLIENT_EMAIL,
-        private_key: privateKey,
-      },
-      scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
-    });
-
-    const client = await auth.getClient();
-    const token = await client.getAccessToken();
-    if (!token.token) {
-      throw new Error('Failed to get FCM access token — token is empty');
-    }
-    console.log('[FCM] Got access token, length:', token.token.length);
-    console.log('[FCM] Access token prefix:', token.token.substring(0, 20));
-    return token.token;
-  } catch (err) {
-    console.error('[FCM] OAuth error:', err);
-    throw err;
-  }
+function getGoogleAuth(): GoogleAuth {
+  const privateKey = env.FCM_PRIVATE_KEY.replace(/\\n/g, '\n');
+  return new GoogleAuth({
+    credentials: {
+      client_email: env.FCM_CLIENT_EMAIL,
+      private_key: privateKey,
+    },
+    scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+  });
 }
 
 interface FCMResult {
@@ -45,6 +25,7 @@ interface FCMResult {
 
 /**
  * Send a single push notification via FCM v1 API.
+ * Uses google-auth-library's authorized HTTP client to avoid fetch header issues.
  */
 async function sendFCMMessage(
   token: string,
@@ -58,56 +39,51 @@ async function sendFCMMessage(
   }
 
   try {
-    const accessToken = await getAccessToken();
+    const auth = getGoogleAuth();
+    const client = await auth.getClient();
     const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
-    console.log(`[FCM] URL: ${url}`);
-    console.log(`[FCM] Authorization header: Bearer ${accessToken.substring(0, 30)}...`);
-    console.log(`[FCM] token_prefix=${token.substring(0, 20)}`);
+    console.log(`[FCM] Sending via google-auth client, token_prefix=${token.substring(0, 20)}`);
 
-    const res = await fetch(
+    const res = await client.request({
       url,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: {
-            token,
-            notification: { title, body },
-            data: data || {},
-            android: {
-              priority: 'high',
-              notification: {
-                channelId: 'default',
-                sound: 'default',
-              },
+      method: 'POST',
+      data: {
+        message: {
+          token,
+          notification: { title, body },
+          data: data || {},
+          android: {
+            priority: 'high',
+            notification: {
+              channelId: 'default',
+              sound: 'default',
             },
-            apns: {
-              payload: {
-                aps: {
-                  sound: 'default',
-                  badge: 1,
-                },
+          },
+          apns: {
+            payload: {
+              aps: {
+                sound: 'default',
+                badge: 1,
               },
             },
           },
-        }),
+        },
       },
-    );
+    });
 
-    if (res.ok) {
-      const result = (await res.json()) as { name: string };
-      return { success: true, messageId: result.name };
-    }
-
-    const errBody = await res.text();
-    return { success: false, error: `HTTP ${res.status}: ${errBody}` };
-  } catch (err) {
+    const result = res.data as { name: string };
+    console.log(`[FCM] Success: ${result.name}`);
+    return { success: true, messageId: result.name };
+  } catch (err: unknown) {
+    const error = err as { response?: { status?: number; data?: unknown }; message?: string };
+    const status = error.response?.status;
+    const errBody = error.response?.data
+      ? JSON.stringify(error.response.data)
+      : error.message || String(err);
+    console.error(`[FCM] Error ${status}:`, errBody);
     return {
       success: false,
-      error: err instanceof Error ? err.message : String(err),
+      error: `HTTP ${status}: ${errBody}`,
     };
   }
 }
