@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -124,10 +124,15 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
         setupNotificationChannel();
         registerForPushNotifications().then((token) => {
           if (token) {
+            Alert.alert('Push Debug', `Token (${token.length} chars): ${token.substring(0, 40)}...`);
             useAuthStore.getState().setPushToken(token);
             sendPushTokenToServer(token);
+          } else {
+            Alert.alert('Push Debug', 'No token returned');
           }
-        }).catch(() => {});
+        }).catch((err) => {
+          Alert.alert('Push Error', String(err));
+        });
       } catch (e) {
         console.warn('[Push] Setup failed:', e);
       }
