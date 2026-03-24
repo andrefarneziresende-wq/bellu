@@ -768,7 +768,7 @@ model Notification {
   userId    String   @map("user_id")
   title     String   @db.VarChar(200)
   body      String   @db.Text
-  type      String   @db.VarChar(50) // booking_created, booking_confirmed, booking_cancelled, booking_reminder, review_received, promotion, admin_broadcast, pro_message
+  type      String   @db.VarChar(50) // booking_created, booking_confirmed, booking_cancelled, booking_reminder, review_received, promotion, admin_broadcast, pro_message, chat_message
   data      String?  @db.Text // JSON payload for deep-linking
   read      Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")

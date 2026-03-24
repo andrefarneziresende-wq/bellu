@@ -1,5 +1,6 @@
 import { prisma } from '../../config/prisma.js';
 import { NotFoundError, ForbiddenError } from '../../shared/errors.js';
+import { sendPushToUser } from '../notification/push.service.js';
 
 /**
  * Get or create a conversation between a client and a professional.
@@ -157,7 +158,10 @@ export async function sendMessage(
 
   const conversation = await prisma.conversation.findUnique({
     where: { id: conversationId },
-    include: { professional: { select: { userId: true } } },
+    include: {
+      professional: { select: { userId: true, businessName: true } },
+      client: { select: { id: true, name: true } },
+    },
   });
 
   if (!conversation) throw new NotFoundError('Conversation');
@@ -181,6 +185,22 @@ export async function sendMessage(
       data: { lastMessageAt: new Date() },
     }),
   ]);
+
+  // Send push notification to the other participant
+  const receiverUserId = isClient
+    ? conversation.professional.userId
+    : conversation.clientId;
+  const senderName = isClient
+    ? conversation.client.name
+    : conversation.professional.businessName;
+  const notifBody = imageUrl ? '📷 Enviou uma foto' : (text || '');
+
+  sendPushToUser(receiverUserId, {
+    title: senderName,
+    body: notifBody,
+    type: 'chat_message',
+    data: { conversationId, senderId },
+  }).catch(() => {}); // fire-and-forget, don't block the response
 
   return message;
 }
