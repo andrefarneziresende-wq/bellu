@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator } from '
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
 import { useTranslation } from 'react-i18next';
 import { colors, spacing, radii, typography } from '../theme/colors';
 import { notificationsApi, type NotificationData } from '../services/api';
@@ -65,8 +66,9 @@ export default function NotificationsScreen() {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Auto-mark all as read when the screen is opened
+  // Auto-mark all as read when the screen is opened + clear app icon badge
   useEffect(() => {
+    Notifications.setBadgeCountAsync(0).catch(() => {});
     if (!loading && notifications.some((n) => !n.read)) {
       notificationsApi.markAllRead().then(() => {
         setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));

@@ -46,6 +46,7 @@ function sendApnsMessage(
   deviceToken: string,
   title: string,
   body: string,
+  badge?: number,
   data?: Record<string, string>,
 ): Promise<PushResult> {
   return new Promise((resolve) => {
@@ -70,7 +71,7 @@ function sendApnsMessage(
       aps: {
         alert: { title, body },
         sound: 'default',
-        badge: 1,
+        ...(badge !== undefined ? { badge } : {}),
       },
       ...data,
     });
@@ -197,14 +198,11 @@ async function sendPushMessage(
   platform: string,
   title: string,
   body: string,
+  badge?: number,
   data?: Record<string, string>,
 ): Promise<PushResult> {
   if (platform === 'ios') {
-    // Extract APNs device token from FCM token if needed
-    // FCM tokens from @react-native-firebase look like: "xxxx:APAyyy"
-    // We need the raw APNs device token for direct APNs delivery
-    // The mobile app should send the APNs token directly
-    return sendApnsMessage(token, title, body, data);
+    return sendApnsMessage(token, title, body, badge, data);
   }
   // Android: use FCM
   return sendFcmMessage(token, title, body, data);
@@ -317,6 +315,11 @@ export async function sendPushToUser(userId: string, payload: PushNotificationPa
     return;
   }
 
+  // Get unread notification count for app icon badge
+  const unreadCount = await prisma.notification.count({
+    where: { userId, read: false },
+  });
+
   const errors: string[] = [];
   let sentCount = 0;
 
@@ -326,6 +329,7 @@ export async function sendPushToUser(userId: string, payload: PushNotificationPa
       t.platform,
       payload.title,
       payload.body,
+      unreadCount,
       { type: payload.type, ...payload.data },
     );
 
