@@ -605,7 +605,7 @@ export default function SearchScreen() {
                               </View>
                               {item.distance !== null && (
                                 <View style={styles.distanceBadge}>
-                                  <Ionicons name="navigate-outline" size={12} color={colors.primary} />
+                                  <Ionicons name="navigate-outline" size={12} color={colors.white} />
                                   <Text style={styles.distanceBadgeText}>{formatDistance(item.distance)}</Text>
                                 </View>
                               )}
