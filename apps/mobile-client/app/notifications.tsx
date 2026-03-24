@@ -86,19 +86,13 @@ export default function NotificationsScreen() {
   };
 
   const handlePress = async (notification: NotificationData) => {
-    // Mark as read and update local state immediately
+    // Mark as read: update local state AND wait for API before navigating
     if (!notification.read) {
       setNotifications((prev) =>
         prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)),
       );
-      try {
-        await notificationsApi.markRead(notification.id);
-      } catch {
-        // Revert on failure
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notification.id ? { ...n, read: false } : n)),
-        );
-      }
+      // Wait for server to update before navigating (so re-fetch shows correct state)
+      await notificationsApi.markRead(notification.id).catch(() => {});
     }
 
     // Navigate based on type/data

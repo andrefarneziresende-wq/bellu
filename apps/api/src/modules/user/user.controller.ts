@@ -21,11 +21,27 @@ export async function deleteMeHandler(request: FastifyRequest, reply: FastifyRep
 export async function listUsersHandler(request: FastifyRequest, reply: FastifyReply) {
   try {
     const { prisma } = await import('../../config/prisma.js');
+
+    // First check if user is a professional owner
+    let professionalId: string | undefined;
+
     const professional = await prisma.professional.findFirst({
       where: { userId: request.user.userId },
     });
 
-    const users = await listUsers(professional?.id);
+    if (professional) {
+      professionalId = professional.id;
+    } else {
+      // Check if user is a staff member
+      const member = await prisma.professionalMember.findFirst({
+        where: { userId: request.user.userId, active: true },
+      });
+      if (member) {
+        professionalId = member.professionalId;
+      }
+    }
+
+    const users = await listUsers(professionalId);
     return reply.send({ success: true, data: users });
   } catch (err) {
     request.log.error(err, 'listUsersHandler error');

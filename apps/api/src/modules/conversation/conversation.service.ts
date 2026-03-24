@@ -27,8 +27,18 @@ export async function getOrCreateConversation(clientId: string, professionalId: 
  * List conversations for a user (as client or as professional).
  */
 export async function listConversations(userId: string) {
-  // Find the user's professional profile (if any)
-  const pro = await prisma.professional.findUnique({ where: { userId } });
+  // Find the user's professional profile (owner or staff)
+  let pro = await prisma.professional.findUnique({ where: { userId } });
+  if (!pro) {
+    // Check if user is a staff member
+    const member = await prisma.professionalMember.findFirst({
+      where: { userId, active: true },
+      select: { professionalId: true },
+    });
+    if (member) {
+      pro = await prisma.professional.findUnique({ where: { id: member.professionalId } });
+    }
+  }
 
   const conversations = await prisma.conversation.findMany({
     where: pro
@@ -54,22 +64,19 @@ export async function listConversations(userId: string) {
   });
 
   // Calculate unread count per conversation
-  const proUserId = pro?.userId;
   const result = await Promise.all(
     conversations.map(async (conv) => {
+      // Unread = messages NOT sent by this user that haven't been read
       const unreadCount = await prisma.conversationMessage.count({
         where: {
           conversationId: conv.id,
           senderId: { not: userId },
-          ...(proUserId && conv.professional.user.id === userId
-            ? { senderId: { not: proUserId } }
-            : {}),
           readAt: null,
         },
       });
 
       const lastMsg = conv.messages[0] ?? null;
-      const isUserThePro = proUserId === userId;
+      const isUserThePro = pro && conv.professionalId === pro.id;
       const otherParty = isUserThePro
         ? { id: conv.client.id, name: conv.client.name, avatar: conv.client.avatar }
         : {
@@ -236,7 +243,16 @@ export async function markAsRead(conversationId: string, userId: string) {
  * Get total unread conversation messages for a user.
  */
 export async function getUnreadCount(userId: string) {
-  const pro = await prisma.professional.findUnique({ where: { userId } });
+  let pro = await prisma.professional.findUnique({ where: { userId } });
+  if (!pro) {
+    const member = await prisma.professionalMember.findFirst({
+      where: { userId, active: true },
+      select: { professionalId: true },
+    });
+    if (member) {
+      pro = await prisma.professional.findUnique({ where: { id: member.professionalId } });
+    }
+  }
 
   const where: Record<string, unknown> = {
     senderId: { not: userId },
