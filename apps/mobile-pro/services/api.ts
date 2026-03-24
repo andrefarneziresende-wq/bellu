@@ -11,10 +11,10 @@ interface RequestOptions {
 }
 
 class ApiService {
-  private getHeaders(custom?: Record<string, string>): Record<string, string> {
+  private getHeaders(hasBody: boolean, custom?: Record<string, string>): Record<string, string> {
     const token = useAuthStore.getState().token;
     return {
-      'Content-Type': 'application/json',
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...custom,
     };
@@ -25,7 +25,7 @@ class ApiService {
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method,
-      headers: this.getHeaders(headers),
+      headers: this.getHeaders(!!body, headers),
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
 
