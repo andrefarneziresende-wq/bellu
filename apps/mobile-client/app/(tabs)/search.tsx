@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, TextInput, ActivityIndicator, ScrollView, Keyboard } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -11,7 +11,7 @@ import * as Location from 'expo-location';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { Card } from '../../components/ui/Card';
 import { toast } from '../../components/ui/Toast';
-import { categoriesApi, professionalsApi } from '../../services/api';
+import { categoriesApi, professionalsApi, favoritesApi } from '../../services/api';
 import type { Professional, Category } from '@beauty/shared-types';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyACtVOd9e3hazjcTbkQT6V5VYoZ2dmt-9c';
@@ -47,9 +47,10 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 export default function SearchScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const params = useLocalSearchParams<{ categoryId?: string }>();
   const mapRef = useRef<MapView>(null);
   const [query, setQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string | null>(params.categoryId || null);
   const [results, setResults] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -64,13 +65,14 @@ export default function SearchScreen() {
   const [placePredictions, setPlacePredictions] = useState<PlacePrediction[]>([]);
   const [showPredictions, setShowPredictions] = useState(false);
   const [isGeoSearch, setIsGeoSearch] = useState(false); // true when results came from address selection
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
   const getCategoryName = useCallback((cat: Category) => {
     const tr = cat.translations?.find((t) => t.locale === i18n.language);
     return tr?.name || cat.translations?.[0]?.name || cat.slug;
   }, [i18n.language]);
 
-  // Fetch categories
+  // Fetch categories + favorites
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -78,8 +80,34 @@ export default function SearchScreen() {
         setCategories(res.data);
       } catch (_) {}
     };
+    const fetchFavorites = async () => {
+      try {
+        const res = await favoritesApi.list();
+        const ids = (res.data || []).map((f: any) => f.professional?.id || f.professionalId || f.id);
+        setFavoriteIds(new Set(ids));
+      } catch (_) {}
+    };
     fetchCategories();
+    fetchFavorites();
   }, []);
+
+  const handleToggleFavorite = async (professionalId: string) => {
+    const prev = favoriteIds.has(professionalId);
+    setFavoriteIds((s) => {
+      const next = new Set(s);
+      if (prev) next.delete(professionalId); else next.add(professionalId);
+      return next;
+    });
+    try {
+      await favoritesApi.add(professionalId);
+    } catch {
+      setFavoriteIds((s) => {
+        const next = new Set(s);
+        if (prev) next.add(professionalId); else next.delete(professionalId);
+        return next;
+      });
+    }
+  };
 
   // Request location permission
   useEffect(() => {
@@ -239,19 +267,29 @@ export default function SearchScreen() {
     if (showMap) return;
     if (isGeoSearch) return; // Results came from address selection, don't overwrite
     const searchTimeout = setTimeout(async () => {
-      if (query.trim().length < 2) {
-        if (query.trim().length === 0) {
-          setResults([]);
-          setSearched(false);
-        }
+      const hasQuery = query.trim().length >= 2;
+      const hasCategory = !!activeFilter;
+
+      if (!hasQuery && !hasCategory) {
+        setResults([]);
+        setSearched(false);
         return;
       }
 
       setLoading(true);
       setSearched(true);
       try {
-        const res = await professionalsApi.search(query.trim());
-        setResults(res.data);
+        if (hasQuery) {
+          const res = await professionalsApi.search(query.trim(), activeFilter || undefined);
+          setResults(res.data);
+        } else {
+          // Category-only filter: use list with optional user location
+          const res = await professionalsApi.list({
+            categoryId: activeFilter!,
+            ...(userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : {}),
+          });
+          setResults(res.data);
+        }
       } catch (_) {
         setResults([]);
       } finally {
@@ -260,7 +298,7 @@ export default function SearchScreen() {
     }, 500);
 
     return () => clearTimeout(searchTimeout);
-  }, [query, showMap, isGeoSearch]);
+  }, [query, showMap, isGeoSearch, activeFilter, userLocation]);
 
   // Fetch nearby when map region changes
   useEffect(() => {
@@ -611,6 +649,9 @@ export default function SearchScreen() {
                               )}
                             </View>
                           </View>
+                          <Pressable style={styles.resultHeart} onPress={() => handleToggleFavorite(item.id)}>
+                            <Ionicons name={favoriteIds.has(item.id) ? 'heart' : 'heart-outline'} size={20} color={favoriteIds.has(item.id) ? colors.error : colors.textSecondary} />
+                          </Pressable>
                         </Card>
                       </Pressable>
                     </Animated.View>
@@ -648,7 +689,8 @@ const styles = StyleSheet.create({
   sortChipTextActive: { color: colors.white },
   resultCount: { fontSize: typography.sizes.sm, color: colors.textSecondary, paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
   resultList: { paddingHorizontal: spacing.lg, paddingBottom: 100 },
-  resultCard: { flexDirection: 'row', marginBottom: spacing.md, overflow: 'hidden' },
+  resultCard: { flexDirection: 'row', marginBottom: spacing.md, overflow: 'hidden', alignItems: 'center' },
+  resultHeart: { padding: spacing.sm },
   resultImage: { width: 90, height: 90, borderTopLeftRadius: radii.lg, borderBottomLeftRadius: radii.lg },
   resultInfo: { flex: 1, padding: spacing.md, justifyContent: 'center' },
   resultName: { fontSize: typography.sizes.md, fontWeight: typography.weights.semibold, color: colors.text },

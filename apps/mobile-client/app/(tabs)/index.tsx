@@ -148,7 +148,7 @@ export default function HomeScreen() {
               renderItem={({ item }) => {
                 const iconName = CATEGORY_ICON_MAP[(item.icon || '').toLowerCase()] || 'grid-outline';
                 return (
-                  <Pressable style={styles.categoryItem} onPress={() => router.push('/(tabs)/search')}>
+                  <Pressable style={styles.categoryItem} onPress={() => router.push({ pathname: '/(tabs)/search', params: { categoryId: item.id } })}>
                     <View style={styles.categoryIcon}>
                       <Ionicons name={iconName} size={24} color={colors.primary} />
                     </View>

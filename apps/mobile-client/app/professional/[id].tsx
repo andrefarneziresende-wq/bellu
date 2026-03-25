@@ -10,7 +10,7 @@ import { colors, spacing, radii, typography } from '../../theme/colors';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { professionalsApi, servicesApi, reviewsApi, portfolioApi, conversationsApi } from '../../services/api';
+import { professionalsApi, servicesApi, reviewsApi, portfolioApi, conversationsApi, favoritesApi } from '../../services/api';
 import type { Professional, Service, Review, PortfolioItem } from '@beauty/shared-types';
 
 type TabKey = 'services' | 'portfolio' | 'reviews' | 'about';
@@ -25,6 +25,7 @@ export default function ProfessionalScreen() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -37,10 +38,11 @@ export default function ProfessionalScreen() {
         setProfessional(profRes.data);
 
         // Fetch related data separately so failures don't block the page
-        const [servRes, revRes, portRes] = await Promise.allSettled([
+        const [servRes, revRes, portRes, favRes] = await Promise.allSettled([
           servicesApi.getByProfessional(id),
           reviewsApi.getByProfessional(id),
           portfolioApi.getByProfessional(id),
+          favoritesApi.check(id),
         ]);
         setServices(servRes.status === 'fulfilled' ? servRes.value.data : []);
         // Reviews API returns { reviews: [], pagination: {} } or array
@@ -49,6 +51,7 @@ export default function ProfessionalScreen() {
         // Portfolio API returns { items: [], pagination: {} } or array
         const portData = portRes.status === 'fulfilled' ? portRes.value.data : [];
         setPortfolio(Array.isArray(portData) ? portData : (portData as any)?.items ?? []);
+        if (favRes.status === 'fulfilled') setIsFavorite(favRes.value.data?.favorited ?? false);
       } catch (error: any) {
         // Professional fetch failed
         setProfessional(null);
@@ -58,6 +61,17 @@ export default function ProfessionalScreen() {
     };
     fetchData();
   }, [id]);
+
+  const handleToggleFavorite = async () => {
+    if (!id) return;
+    const prev = isFavorite;
+    setIsFavorite(!prev);
+    try {
+      await favoritesApi.add(id);
+    } catch {
+      setIsFavorite(prev);
+    }
+  };
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'services', label: t('professional.services') },
@@ -120,6 +134,11 @@ export default function ProfessionalScreen() {
           <SafeAreaView style={styles.backBtn} edges={['top']}>
             <Pressable onPress={() => router.back()} style={styles.backCircle}>
               <Ionicons name="arrow-back" size={22} color={colors.text} />
+            </Pressable>
+          </SafeAreaView>
+          <SafeAreaView style={styles.heartBtn} edges={['top']}>
+            <Pressable onPress={handleToggleFavorite} style={styles.backCircle}>
+              <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={22} color={isFavorite ? colors.error : colors.text} />
             </Pressable>
           </SafeAreaView>
         </Animated.View>
@@ -275,6 +294,7 @@ const styles = StyleSheet.create({
   coverImage: { width: '100%', height: 220 },
   coverPlaceholder: { backgroundColor: colors.borderLight || '#F0F0F0', justifyContent: 'center', alignItems: 'center' },
   backBtn: { position: 'absolute', top: 0, left: spacing.lg },
+  heartBtn: { position: 'absolute', top: 0, right: spacing.lg },
   backCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.white, justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: colors.shadowDark, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 6 },
   profileSection: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: -30 },
   avatar: { width: 80, height: 80, borderRadius: radii.xl, borderWidth: 3, borderColor: colors.white },

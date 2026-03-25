@@ -116,8 +116,11 @@ export const professionalsApi = {
   getFeatured: (countryId: string) =>
     request<ApiResponse<Professional[]>>(`/professionals/featured?countryId=${encodeURIComponent(countryId)}`),
 
-  search: (query: string) =>
-    request<PaginatedResponse<Professional>>(`/professionals/search?query=${encodeURIComponent(query)}`),
+  search: (query: string, categoryId?: string) => {
+    const params = new URLSearchParams({ query });
+    if (categoryId) params.set('categoryId', categoryId);
+    return request<PaginatedResponse<Professional>>(`/professionals/search?${params}`);
+  },
 };
 
 // --- Services ---
@@ -188,6 +191,9 @@ export const favoritesApi = {
     request<ApiResponse<void>>(`/favorites/${professionalId}`, {
       method: 'DELETE',
     }),
+
+  check: (professionalId: string) =>
+    request<ApiResponse<{ favorited: boolean }>>(`/favorites/${professionalId}/check`),
 };
 
 // --- Members (Staff) ---
