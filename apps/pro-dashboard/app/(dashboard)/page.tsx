@@ -47,9 +47,15 @@ export default function DashboardPage() {
         ),
       ]);
 
-      const bookingsList = bookingsRes.data?.bookings || [];
+      const rawBookings = bookingsRes.data?.bookings || [];
       const allBookings = allBookingsRes.data?.bookings || [];
       const clients = clientsRes.data || [];
+
+      // Filter out cancelled and no-show bookings
+      const bookingsList = rawBookings.filter((b) => {
+        const s = (b.status || '').toUpperCase();
+        return s !== 'CANCELLED' && s !== 'NO_SHOW';
+      });
       const todayBookings = bookingsList.length;
 
       // Calculate month stats from all bookings

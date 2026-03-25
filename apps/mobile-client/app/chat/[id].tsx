@@ -41,6 +41,9 @@ export default function ChatScreen() {
   const [uploading, setUploading] = useState(false);
   const [headerName, setHeaderName] = useState('Chat');
   const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSentRef = useRef(0);
   const flatListRef = useRef<FlatList>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -97,13 +100,24 @@ export default function ChatScreen() {
       }
     });
 
+    // Listen for typing indicators
+    const unsubTyping = wsManager.on('typing', (data) => {
+      if (data?.conversationId === conversationId && data?.userId !== user?.id) {
+        setIsTyping(true);
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000);
+      }
+    });
+
     // Fallback: poll every 30s in case WebSocket disconnects
     pollingRef.current = setInterval(loadMessages, 30000);
 
     return () => {
       unsubWs();
       unsubRead();
+      unsubTyping();
       if (pollingRef.current) clearInterval(pollingRef.current);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, [conversationId]);
 
@@ -273,6 +287,13 @@ export default function ChatScreen() {
           }}
         />
 
+        {/* Typing indicator */}
+        {isTyping && (
+          <View style={styles.typingContainer}>
+            <Text style={styles.typingText}>{t('chat.typing')}</Text>
+          </View>
+        )}
+
         {/* Input */}
         <View style={styles.inputContainer}>
           <Pressable onPress={handleImageOptions} style={styles.attachButton} disabled={uploading}>
@@ -285,7 +306,15 @@ export default function ChatScreen() {
           <TextInput
             style={styles.textInput}
             value={inputText}
-            onChangeText={setInputText}
+            onChangeText={(text) => {
+              setInputText(text);
+              // Send typing indicator (throttled to once every 2s)
+              const now = Date.now();
+              if (now - lastTypingSentRef.current > 2000 && conversationId) {
+                lastTypingSentRef.current = now;
+                wsManager.send({ type: 'typing', conversationId });
+              }
+            }}
             placeholder="Digite sua mensagem..."
             placeholderTextColor={colors.textTertiary}
             multiline
@@ -393,6 +422,16 @@ const styles = StyleSheet.create({
   },
   myMessageTime: {
     color: 'rgba(255,255,255,0.7)',
+  },
+  typingContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 4,
+    backgroundColor: colors.white,
+  },
+  typingText: {
+    fontSize: typography.sizes.xs,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
   },
   inputContainer: {
     flexDirection: 'row',

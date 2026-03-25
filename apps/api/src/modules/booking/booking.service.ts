@@ -37,13 +37,6 @@ function timeToMinutes(time: string): number {
 }
 
 export async function createBooking(userId: string, data: CreateBookingInput) {
-  // Block bookings in the past
-  const bookingDateTime = new Date(`${data.date}T${data.startTime}:00`);
-  const now = new Date();
-  if (bookingDateTime < now) {
-    throw new BadRequestError('Cannot create a booking in the past');
-  }
-
   const service = await prisma.service.findUnique({
     where: { id: data.serviceId },
   });
@@ -54,6 +47,18 @@ export async function createBooking(userId: string, data: CreateBookingInput) {
 
   // Resolve professionalId: from body or from the service's professional
   const professionalId = data.professionalId || service.professionalId;
+
+  // Block bookings in the past (using professional's timezone)
+  const professional = await prisma.professional.findUnique({
+    where: { id: professionalId },
+    include: { country: { select: { timezone: true } } },
+  });
+  const tz = professional?.country?.timezone || 'America/Sao_Paulo';
+  const nowInTz = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
+  const bookingDateTime = new Date(`${data.date}T${data.startTime}:00`);
+  if (bookingDateTime < nowInTz) {
+    throw new BadRequestError('booking_in_past');
+  }
 
   // If professionalId was provided, verify the service belongs to that professional
   if (data.professionalId && service.professionalId !== data.professionalId) {
@@ -81,10 +86,9 @@ export async function createBooking(userId: string, data: CreateBookingInput) {
   }
 
   // Determine if this is a professional creating a manual booking
-  const professional = await prisma.professional.findFirst({
+  const isProManual = !!(await prisma.professional.findFirst({
     where: { userId, id: professionalId },
-  });
-  const isProManual = !!professional;
+  }));
 
   // Resolve memberId: use provided, or randomly assign an active member
   let memberId = data.memberId || null;
@@ -166,6 +170,7 @@ export async function listUserBookings(
       include: {
         service: true,
         professional: { select: { id: true, businessName: true, avatarPhoto: true } },
+        member: { select: { id: true, name: true, avatar: true } },
         review: { select: { id: true, rating: true } },
       },
       orderBy: { date: 'desc' },

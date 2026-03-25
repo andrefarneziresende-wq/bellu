@@ -10,7 +10,6 @@ import { colors, spacing, radii, typography } from '../../theme/colors';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { bookingsApi } from '../../services/api';
-import type { Booking } from '@beauty/shared-types';
 
 const statusConfig: Record<string, { variant: 'success' | 'warning' | 'default' | 'error'; key: string }> = {
   confirmed: { variant: 'success', key: 'booking.confirmed' },
@@ -138,6 +137,7 @@ export default function BookingsScreen() {
             const statusKey = (item.status || '').toLowerCase();
             const status = statusConfig[statusKey] || statusConfig.pending;
             const professionalName = item.professional?.businessName || '';
+            const memberName = item.member?.name || null;
             const serviceName = item.service?.name || '';
             const price = item.totalPrice ?? item.service?.price ?? 0;
             const currency = item.currency || item.service?.currency || 'BRL';
@@ -149,6 +149,12 @@ export default function BookingsScreen() {
                     <Badge label={t(status.key)} variant={status.variant} />
                   </View>
                   <Text style={styles.bookingService}>{serviceName}</Text>
+                  {memberName && (
+                    <View style={styles.memberRow}>
+                      <Ionicons name="person-outline" size={13} color={colors.textSecondary} />
+                      <Text style={styles.memberText}>{memberName}</Text>
+                    </View>
+                  )}
                   <View style={styles.bookingDetails}>
                     <View style={styles.detailRow}>
                       <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
@@ -161,33 +167,42 @@ export default function BookingsScreen() {
                     <Text style={styles.bookingPrice}>{formatPrice(price, currency)}</Text>
                   </View>
                   {(statusKey === 'confirmed' || statusKey === 'pending') && (
-                    <Pressable
-                      style={styles.cancelBtn}
-                      onPress={() => {
-                        Alert.alert(
-                          t('booking.cancelConfirmTitle'),
-                          t('booking.cancelConfirmMessage'),
-                          [
-                            { text: t('common.no'), style: 'cancel' },
-                            {
-                              text: t('common.yes'),
-                              style: 'destructive',
-                              onPress: async () => {
-                                try {
-                                  await bookingsApi.cancel(item.id);
-                                  fetchBookings();
-                                } catch (err: any) {
-                                  Alert.alert('Erro', err.message || 'Nao foi possivel cancelar');
-                                }
+                    <View style={styles.actionRow}>
+                      <Pressable
+                        style={styles.rescheduleBtn}
+                        onPress={() => router.push(`/booking/${item.professionalId}`)}
+                      >
+                        <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+                        <Text style={styles.rescheduleText}>{t('booking.reschedule')}</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.cancelBtn}
+                        onPress={() => {
+                          Alert.alert(
+                            t('booking.cancelConfirmTitle'),
+                            t('booking.cancelConfirmMessage'),
+                            [
+                              { text: t('common.no'), style: 'cancel' },
+                              {
+                                text: t('common.yes'),
+                                style: 'destructive',
+                                onPress: async () => {
+                                  try {
+                                    await bookingsApi.cancel(item.id);
+                                    fetchBookings();
+                                  } catch (err: any) {
+                                    Alert.alert('Erro', err.message || 'Nao foi possivel cancelar');
+                                  }
+                                },
                               },
-                            },
-                          ],
-                        );
-                      }}
-                    >
-                      <Ionicons name="close-circle-outline" size={16} color={colors.error || '#E74C3C'} />
-                      <Text style={styles.cancelText}>{t('booking.cancelBooking')}</Text>
-                    </Pressable>
+                            ],
+                          );
+                        }}
+                      >
+                        <Ionicons name="close-circle-outline" size={16} color={colors.error || '#E74C3C'} />
+                        <Text style={styles.cancelText}>{t('booking.cancelBooking')}</Text>
+                      </Pressable>
+                    </View>
                   )}
                   {statusKey === 'completed' && !item.review && (
                     <Pressable
@@ -220,13 +235,18 @@ const styles = StyleSheet.create({
   bookingCard: { marginBottom: spacing.md, padding: spacing.lg },
   bookingHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   bookingProfessional: { fontSize: typography.sizes.md, fontWeight: typography.weights.semibold, color: colors.text },
-  bookingService: { fontSize: typography.sizes.sm, color: colors.textSecondary, marginTop: spacing.xs },
+  bookingService: { fontSize: typography.sizes.sm, color: colors.textSecondary, marginTop: spacing.xs } as const,
+  memberRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 4, marginTop: 4 },
+  memberText: { fontSize: typography.sizes.xs, color: colors.textSecondary, fontStyle: 'italic' as const },
   bookingDetails: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.md, gap: spacing.lg },
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   detailText: { fontSize: typography.sizes.sm, color: colors.textSecondary },
   bookingPrice: { fontSize: typography.sizes.md, fontWeight: typography.weights.bold, color: colors.primary, marginLeft: 'auto' },
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xxxl },
-  cancelBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.md, alignSelf: 'flex-start', paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radii.md, backgroundColor: '#FEE2E2' },
+  actionRow: { flexDirection: 'row' as const, gap: spacing.sm, marginTop: spacing.md },
+  rescheduleBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 4, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radii.md, backgroundColor: '#E0F2FE' },
+  rescheduleText: { fontSize: typography.sizes.xs, fontWeight: typography.weights.semibold, color: colors.primary },
+  cancelBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 4, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radii.md, backgroundColor: '#FEE2E2' },
   cancelText: { fontSize: typography.sizes.xs, fontWeight: typography.weights.semibold, color: colors.error || '#E74C3C' },
   reviewBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.md, alignSelf: 'flex-start', paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radii.md, backgroundColor: '#FEF3C7' },
   reviewText: { fontSize: typography.sizes.xs, fontWeight: typography.weights.semibold, color: colors.accent },

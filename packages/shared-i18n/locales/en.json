@@ -115,7 +115,9 @@
     "selectAllSessions": "Select date and time for all sessions",
     "packageBooked": "Package booked successfully!",
     "confirmPackage": "Confirm package",
-    "cancelConfirmation": "Are you sure you want to cancel?"
+    "cancelConfirmation": "Are you sure you want to cancel?",
+    "reschedule": "Reschedule",
+    "professional": "Professional"
   },
   "payment": {
     "title": "Payment",
@@ -241,7 +243,8 @@
   "chat": {
     "placeholder": "Type your message...",
     "send": "Send",
-    "noMessages": "No messages yet"
+    "noMessages": "No messages yet",
+    "typing": "typing..."
   },
   "notifications": {
     "newBooking": "New booking",
@@ -267,7 +270,8 @@
     "validationError": "Check the fields and try again",
     "loadError": "Error loading data. Please try again.",
     "deleteConfirm": "Are you sure you want to delete this item? This action cannot be undone.",
-    "sessionExpired": "Your session has expired. Please log in again."
+    "sessionExpired": "Your session has expired. Please log in again.",
+    "bookingInPast": "Cannot book an appointment in the past"
   },
   "pro": {
     "dashboard": {

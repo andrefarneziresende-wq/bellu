@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -22,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth-context';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
+import { apiFetch } from '@/lib/api';
 
 // Each nav item maps to the permissions needed to see it
 // Empty array = always visible; '*' check handled by hasAnyPermission
@@ -46,12 +48,37 @@ export function Sidebar() {
   const pathname = usePathname();
   const { t } = useTranslation();
   const { proContext, hasAnyPermission } = useAuth();
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  const fetchUnreadCounts = useCallback(async () => {
+    try {
+      const [msgRes, notifRes] = await Promise.all([
+        apiFetch<{ data: { unreadCount: number } }>('/api/conversations/unread-count').catch(() => null),
+        apiFetch<{ data: { count: number } }>('/api/notifications/unread-count').catch(() => null),
+      ]);
+      if (msgRes?.data) setUnreadMessages(msgRes.data.unreadCount);
+      if (notifRes?.data) setUnreadNotifications(notifRes.data.count);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadCounts();
+    const interval = setInterval(fetchUnreadCounts, 30000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCounts]);
 
   // Filter navigation items based on permissions
   const visibleNav = navigation.filter((item) => {
     if (item.permissions.length === 0) return true; // Always visible
     return hasAnyPermission(item.permissions);
   });
+
+  const getBadge = (key: string) => {
+    if (key === 'conversations' && unreadMessages > 0) return unreadMessages;
+    if (key === 'notifications' && unreadNotifications > 0) return unreadNotifications;
+    return 0;
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar">
@@ -95,6 +122,11 @@ export function Sidebar() {
             >
               <item.icon className="h-5 w-5" />
               {t(`proDashboard.sidebar.${item.key}`)}
+              {getBadge(item.key) > 0 && (
+                <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand-rose px-1.5 text-[10px] font-bold text-white">
+                  {getBadge(item.key)}
+                </span>
+              )}
             </Link>
           );
         })}

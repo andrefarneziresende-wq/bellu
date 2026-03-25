@@ -115,7 +115,9 @@
     "selectAllSessions": "Selecione data e horário para todas as sessões",
     "packageBooked": "Pacote agendado com sucesso!",
     "confirmPackage": "Confirmar pacote",
-    "cancelConfirmation": "Tem certeza que deseja cancelar?"
+    "cancelConfirmation": "Tem certeza que deseja cancelar?",
+    "reschedule": "Reagendar",
+    "professional": "Profissional"
   },
   "payment": {
     "title": "Pagamento",
@@ -241,7 +243,8 @@
   "chat": {
     "placeholder": "Digite sua mensagem...",
     "send": "Enviar",
-    "noMessages": "Nenhuma mensagem ainda"
+    "noMessages": "Nenhuma mensagem ainda",
+    "typing": "digitando..."
   },
   "notifications": {
     "newBooking": "Novo agendamento",
@@ -267,7 +270,8 @@
     "validationError": "Verifique os campos e tente novamente",
     "loadError": "Erro ao carregar dados. Tente novamente.",
     "deleteConfirm": "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
-    "sessionExpired": "Sua sessão expirou. Faça login novamente."
+    "sessionExpired": "Sua sessão expirou. Faça login novamente.",
+    "bookingInPast": "Não é possível agendar em um horário que já passou"
   },
   "pro": {
     "dashboard": {

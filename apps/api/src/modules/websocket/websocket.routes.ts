@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
-import { addConnection } from './websocket.service.js';
+import { addConnection, sendToUser } from './websocket.service.js';
+import { prisma } from '../../config/prisma.js';
 
 export async function websocketRoutes(app: FastifyInstance) {
   app.get('/connect', { websocket: true }, async (socket, request) => {
@@ -30,11 +31,23 @@ export async function websocketRoutes(app: FastifyInstance) {
       });
 
       socket.on('message', (raw: Buffer) => {
-        // Handle client messages (e.g., typing indicators in the future)
         try {
           const msg = JSON.parse(raw.toString());
           if (msg.type === 'ping') {
             socket.send(JSON.stringify({ type: 'pong' }));
+          } else if (msg.type === 'typing' && msg.conversationId) {
+            // Forward typing indicator to the other party
+            prisma.conversation.findUnique({
+              where: { id: msg.conversationId },
+              select: { clientId: true, professional: { select: { userId: true } } },
+            }).then((conv) => {
+              if (!conv) return;
+              const otherId = conv.clientId === userId ? conv.professional.userId : conv.clientId;
+              sendToUser(otherId, {
+                type: 'typing',
+                data: { conversationId: msg.conversationId, userId },
+              });
+            }).catch(() => {});
           }
         } catch {
           // ignore malformed messages

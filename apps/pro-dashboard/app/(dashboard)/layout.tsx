@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/dashboard/sidebar';
 import { Header } from '@/components/dashboard/header';
 import { useAuth } from '@/lib/auth-context';
 import { useTranslation } from '@/lib/i18n';
+import { wsManager } from '@/lib/websocket';
 
 export default function DashboardLayout({
   children,
@@ -19,6 +20,10 @@ export default function DashboardLayout({
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
+    }
+    if (user) {
+      wsManager.connect();
+      return () => wsManager.disconnect();
     }
   }, [user, loading, router]);
 

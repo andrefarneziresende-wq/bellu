@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { MessageSquare, Send, Loader2, ImageIcon, ArrowLeft } from 'lucide-react';
 import { apiFetch, apiUpload } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { wsManager } from '@/lib/websocket';
 
 interface Conversation {
   id: string;
@@ -37,6 +38,9 @@ export default function ConversationsPage() {
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
   const [chatName, setChatName] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSentRef = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -88,11 +92,49 @@ export default function ConversationsPage() {
     pollingRef.current = setInterval(() => loadMessages(convId), 5000);
   };
 
+  // WebSocket real-time listeners
   useEffect(() => {
+    const unsubMsg = wsManager.on('new_message', (data: any) => {
+      if (data?.conversationId === selectedId && data?.message) {
+        if (data.message.senderId === user?.id) return;
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === data.message.id)) return prev;
+          return [...prev, data.message];
+        });
+        apiFetch(`/api/conversations/${selectedId}/read`, { method: 'PATCH' }).catch(() => {});
+      }
+      // Refresh conversation list for updated lastMessage
+      loadConversations();
+    });
+
+    const unsubTyping = wsManager.on('typing', (data: any) => {
+      if (data?.conversationId === selectedId && data?.userId !== user?.id) {
+        setIsTyping(true);
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000);
+      }
+    });
+
+    const unsubRead = wsManager.on('messages_read', (data: any) => {
+      if (data?.conversationId === selectedId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.sender.id === user?.id && !m.readAt
+              ? { ...m, readAt: new Date().toISOString() }
+              : m,
+          ),
+        );
+      }
+    });
+
     return () => {
+      unsubMsg();
+      unsubTyping();
+      unsubRead();
       if (pollingRef.current) clearInterval(pollingRef.current);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
-  }, []);
+  }, [selectedId, user?.id, loadConversations]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -245,6 +287,13 @@ export default function ConversationsPage() {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Typing indicator */}
+            {isTyping && (
+              <div className="px-4 py-1">
+                <p className="text-xs italic text-muted-foreground">digitando...</p>
+              </div>
+            )}
+
             {/* Input */}
             <div className="flex items-end gap-2 border-t p-3">
               <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleImageUpload} />
@@ -253,7 +302,14 @@ export default function ConversationsPage() {
               </Button>
               <Input
                 value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
+                onChange={(e) => {
+                  setInputText(e.target.value);
+                  const now = Date.now();
+                  if (now - lastTypingSentRef.current > 2000 && selectedId) {
+                    lastTypingSentRef.current = now;
+                    wsManager.send({ type: 'typing', conversationId: selectedId });
+                  }
+                }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="Digite sua mensagem..."
                 className="flex-1"

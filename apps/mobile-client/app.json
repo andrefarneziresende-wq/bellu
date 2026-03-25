@@ -71,6 +71,12 @@
       "@react-native-firebase/messaging",
       "./plugins/withModularHeaders"
     ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b06ec0f9-63d5-498b-932d-b02d82aedb30"
+    },
     "experiments": {
       "typedRoutes": true
     },

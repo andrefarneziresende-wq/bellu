@@ -235,7 +235,18 @@ export default function BookingScreen() {
       setSelectedTime(null);
       try {
         const res = await bookingsApi.availableSlots(id, selectedDate, selectedMember?.id);
-        setTimeSlots(res.data);
+        // Filter out past time slots if the selected date is today
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (selectedDate === todayStr) {
+          const now = new Date();
+          const nowMinutes = now.getHours() * 60 + now.getMinutes();
+          setTimeSlots(res.data.filter((slot: string) => {
+            const [h, m] = slot.split(':').map(Number);
+            return h * 60 + m > nowMinutes;
+          }));
+        } else {
+          setTimeSlots(res.data);
+        }
       } catch {
         setTimeSlots([]);
       } finally {
@@ -260,7 +271,12 @@ export default function BookingScreen() {
       toast(t('booking.bookingSuccess'), 'success');
       router.back();
     } catch (error: any) {
-      toast(error.message || t('common.error'), 'error');
+      const msg = error.message || '';
+      if (msg.includes('booking_in_past')) {
+        toast(t('errors.bookingInPast'), 'error');
+      } else {
+        toast(msg || t('common.error'), 'error');
+      }
     } finally {
       setSubmitting(false);
     }
