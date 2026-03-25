@@ -47,6 +47,11 @@ interface RegisterData {
   specialties: string[];
   businessName?: string;
   taxId?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  timezone?: string;
+  countryId?: string;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -96,6 +101,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         email: data.email,
         password: data.password,
         phone: data.phone,
+        countryId: data.countryId,
+        locale: 'pt-BR',
         role: 'professional',
       });
 
@@ -107,6 +114,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         specialties: data.specialties,
         businessName: data.businessName || '',
         taxId: data.taxId || '',
+        address: data.address || '',
+        city: data.city || '',
+        state: data.state || '',
+        timezone: data.timezone || '',
+        countryId: data.countryId || '',
       });
 
       // Step 3: Fetch pro context and profile

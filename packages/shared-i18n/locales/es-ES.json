@@ -53,7 +53,17 @@
     "resetPassword": "Restablecer contraseña",
     "codeSent": "Código enviado a tu correo",
     "resetSuccess": "¡Contraseña restablecida con éxito!",
-    "resetError": "Código inválido o expirado"
+    "resetError": "Código inválido o expirado",
+    "personalInfo": "Datos personales",
+    "businessInfo": "Datos del establecimiento",
+    "businessNamePlaceholder": "Nombre del establecimiento",
+    "addressPlaceholder": "Dirección",
+    "cityPlaceholder": "Ciudad",
+    "selectState": "Estado/Provincia",
+    "country": "País",
+    "businessNameRequired": "Informe el nombre del establecimiento",
+    "stateRequired": "Seleccione el estado",
+    "cityRequired": "Informe la ciudad"
   },
   "home": {
     "greeting": "Hola, {{name}}",

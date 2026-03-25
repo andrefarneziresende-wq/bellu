@@ -50,10 +50,13 @@ export const updateUserSchema = z.object({
 export const createProfessionalSchema = z.object({
   businessName: z.string().min(2).max(150),
   description: z.string().max(1000).optional(),
-  address: z.string().min(5),
-  latitude: z.coerce.number().min(-90).max(90),
-  longitude: z.coerce.number().min(-180).max(180),
-  taxId: z.string().min(5).max(20),
+  address: z.string().max(500).default(''),
+  city: z.string().max(100).optional(),
+  state: z.string().max(100).optional(),
+  timezone: z.string().max(50).optional(),
+  latitude: z.coerce.number().min(-90).max(90).default(0),
+  longitude: z.coerce.number().min(-180).max(180).default(0),
+  taxId: z.string().max(20).default(''),
   countryId: z.string().uuid(),
 });
 
@@ -61,6 +64,9 @@ export const updateProfessionalSchema = z.object({
   businessName: z.string().min(2).max(150).optional(),
   description: z.string().max(1000).optional(),
   address: z.string().min(5).optional(),
+  city: z.string().max(100).optional(),
+  state: z.string().max(100).optional(),
+  timezone: z.string().max(50).optional(),
   latitude: z.coerce.number().min(-90).max(90).optional(),
   longitude: z.coerce.number().min(-180).max(180).optional(),
   coverPhoto: z.string().url().optional(),

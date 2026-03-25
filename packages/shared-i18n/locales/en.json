@@ -53,7 +53,17 @@
     "resetPassword": "Reset password",
     "codeSent": "Code sent to your email",
     "resetSuccess": "Password reset successful!",
-    "resetError": "Invalid or expired code"
+    "resetError": "Invalid or expired code",
+    "personalInfo": "Personal info",
+    "businessInfo": "Business info",
+    "businessNamePlaceholder": "Business name",
+    "addressPlaceholder": "Address",
+    "cityPlaceholder": "City",
+    "selectState": "State",
+    "country": "Country",
+    "businessNameRequired": "Business name is required",
+    "stateRequired": "Please select a state",
+    "cityRequired": "City is required"
   },
   "home": {
     "greeting": "Hi, {{name}}",

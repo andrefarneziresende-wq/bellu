@@ -53,7 +53,17 @@
     "resetPassword": "Redefinir senha",
     "codeSent": "Código enviado para seu e-mail",
     "resetSuccess": "Senha redefinida com sucesso!",
-    "resetError": "Código inválido ou expirado"
+    "resetError": "Código inválido ou expirado",
+    "personalInfo": "Dados pessoais",
+    "businessInfo": "Dados do estabelecimento",
+    "businessNamePlaceholder": "Nome do estabelecimento",
+    "addressPlaceholder": "Endereço",
+    "cityPlaceholder": "Cidade",
+    "selectState": "Estado (UF)",
+    "country": "País",
+    "businessNameRequired": "Informe o nome do estabelecimento",
+    "stateRequired": "Selecione o estado",
+    "cityRequired": "Informe a cidade"
   },
   "home": {
     "greeting": "Olá, {{name}}",
