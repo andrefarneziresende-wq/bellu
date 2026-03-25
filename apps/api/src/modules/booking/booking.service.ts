@@ -409,5 +409,22 @@ export async function getAvailableSlots(professionalId: string, date: string, me
     }
   }
 
+  // Filter out past time slots if the requested date is today (in the professional's timezone)
+  const professional = await prisma.professional.findUnique({
+    where: { id: professionalId },
+    include: { country: { select: { timezone: true } } },
+  });
+  const tz = professional?.country?.timezone || 'America/Sao_Paulo';
+  const nowInTz = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
+  const todayStr = `${nowInTz.getFullYear()}-${String(nowInTz.getMonth() + 1).padStart(2, '0')}-${String(nowInTz.getDate()).padStart(2, '0')}`;
+
+  if (date === todayStr) {
+    const nowMinutes = nowInTz.getHours() * 60 + nowInTz.getMinutes();
+    return slots.filter((slot) => {
+      const [h, m] = slot.split(':').map(Number);
+      return h * 60 + m > nowMinutes;
+    });
+  }
+
   return slots;
 }

@@ -244,19 +244,8 @@ export default function BookingScreen() {
       setSelectedTime(null);
       try {
         const res = await bookingsApi.availableSlots(id, selectedDate, selectedMember?.id);
-        // Filter out past time slots if the selected date is today (use local time, not UTC)
-        const now = new Date();
-        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        if (selectedDate === todayStr) {
-          const nowMinutes = now.getHours() * 60 + now.getMinutes();
-          const filtered = res.data.filter((slot: string) => {
-            const [h, m] = slot.split(':').map(Number);
-            return h * 60 + m > nowMinutes;
-          });
-          setTimeSlots(filtered);
-        } else {
-          setTimeSlots(res.data);
-        }
+        // Server already filters out past slots using the professional's timezone
+        setTimeSlots(res.data);
       } catch {
         setTimeSlots([]);
       } finally {
