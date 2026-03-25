@@ -70,16 +70,16 @@ export default function ChatScreen() {
   useEffect(() => {
     loadMessages();
 
-    // Listen for real-time messages via WebSocket
+    // Listen for real-time messages via WebSocket (only from other party)
     const unsubWs = wsManager.on('new_message', (data) => {
       if (data?.conversationId === conversationId && data?.message) {
+        // Skip messages sent by current user (already added via handleSend)
+        if (data.message.senderId === user?.id) return;
         setMessages((prev) => {
-          // Avoid duplicates
           if (prev.some((m) => m.id === data.message.id)) return prev;
           return [...prev, data.message];
         });
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-        // Mark as read since user is viewing this conversation
         conversationsApi.markRead(conversationId!).catch(() => {});
       }
     });

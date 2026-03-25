@@ -54,12 +54,22 @@ export default function DashboardScreen() {
       const bookingsRes = await api.get<{ data: Booking[] }>(
         `/bookings/professional?date=${today}`
       );
-      const todayBookings = bookingsRes.data || [];
+      const allBookings = bookingsRes.data || [];
+      // Filter out cancelled and no-show bookings from dashboard
+      const todayBookings = allBookings.filter(
+        (b) => {
+          const s = (b.status || '').toLowerCase();
+          return s !== 'cancelled' && s !== 'no_show';
+        }
+      );
       setBookings(todayBookings);
 
-      // Calculate stats from bookings
+      // Calculate stats from active bookings only
       const confirmedBookings = todayBookings.filter(
-        (b) => b.status === 'confirmed' || b.status === 'completed'
+        (b) => {
+          const s = (b.status || '').toLowerCase();
+          return s === 'confirmed' || s === 'completed';
+        }
       );
       const weekRevenue = confirmedBookings.reduce((sum, b) => sum + (b.price || 0), 0);
 

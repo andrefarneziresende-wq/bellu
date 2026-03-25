@@ -30,6 +30,16 @@ export async function conversationRoutes(app: FastifyInstance) {
     },
   );
 
+  // Get unread count across all conversations (MUST be before /:id routes)
+  app.get(
+    '/unread-count',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const result = await service.getUnreadCount(request.user.userId);
+      return reply.status(200).send({ success: true, data: result });
+    },
+  );
+
   // Get messages in a conversation
   app.get<{ Params: { id: string }; Querystring: { page?: string } }>(
     '/:id/messages',
@@ -63,16 +73,6 @@ export async function conversationRoutes(app: FastifyInstance) {
     { preHandler: [authenticate] },
     async (request, reply) => {
       const result = await service.markAsRead(request.params.id, request.user.userId);
-      return reply.status(200).send({ success: true, data: result });
-    },
-  );
-
-  // Get unread count across all conversations
-  app.get(
-    '/unread-count',
-    { preHandler: [authenticate] },
-    async (request, reply) => {
-      const result = await service.getUnreadCount(request.user.userId);
       return reply.status(200).send({ success: true, data: result });
     },
   );
