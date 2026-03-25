@@ -83,7 +83,8 @@ export default function SearchScreen() {
     const fetchFavorites = async () => {
       try {
         const res = await favoritesApi.list();
-        const ids = (res.data || []).map((f: any) => f.professional?.id || f.professionalId || f.id);
+        const list = Array.isArray(res.data) ? res.data : (res.data as any)?.favorites ?? [];
+        const ids = list.map((f: any) => f.professional?.id || f.professionalId || f.id);
         setFavoriteIds(new Set(ids));
       } catch (_) {}
     };
@@ -442,7 +443,20 @@ export default function SearchScreen() {
             } else {
               // Switching to map: keep query as address
               if (query) setAddressQuery(query);
-              if (results.length > 0) setNearbyResults(results);
+              if (results.length > 0) {
+                setNearbyResults(results);
+                // Center map on results if we have user location from the search
+                if (userLocation) {
+                  const newRegion = {
+                    latitude: userLocation.lat,
+                    longitude: userLocation.lng,
+                    latitudeDelta: 0.05,
+                    longitudeDelta: 0.05,
+                  };
+                  setRegion(newRegion);
+                  setTimeout(() => mapRef.current?.animateToRegion(newRegion, 500), 100);
+                }
+              }
             }
             setShowMap(!showMap);
           }}

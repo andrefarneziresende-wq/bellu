@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -21,7 +22,9 @@ export default function FavoritesScreen() {
     setLoading(true);
     try {
       const res = await favoritesApi.list();
-      setFavorites(res.data);
+      // API returns { favorites: [...], pagination: {...} } or array
+      const list = Array.isArray(res.data) ? res.data : (res.data as any)?.favorites ?? [];
+      setFavorites(list);
     } catch (error: any) {
       // Silently handle
     } finally {
@@ -29,9 +32,12 @@ export default function FavoritesScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchFavorites();
-  }, [fetchFavorites]);
+  // Refresh favorites every time the tab gains focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchFavorites();
+    }, [fetchFavorites]),
+  );
 
   const handleToggleFavorite = async (professionalId: string) => {
     try {
