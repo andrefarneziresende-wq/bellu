@@ -145,6 +145,9 @@ model Professional {
   businessName String             @map("business_name") @db.VarChar(150)
   description  String?            @db.Text
   address      String             @db.VarChar(500)
+  city         String?            @db.VarChar(100)
+  state        String?            @db.VarChar(100)
+  timezone     String?            @db.VarChar(50) // e.g. America/Sao_Paulo, America/Manaus
   latitude     Float
   longitude    Float
   coverPhoto   String?            @map("cover_photo") @db.VarChar(500)

@@ -7,6 +7,9 @@ interface CreateProfessionalData {
   businessName: string;
   description?: string;
   address: string;
+  city?: string;
+  state?: string;
+  timezone?: string;
   latitude: number;
   longitude: number;
   taxId: string;
@@ -17,6 +20,9 @@ interface UpdateProfessionalData {
   businessName?: string;
   description?: string;
   address?: string;
+  city?: string;
+  state?: string;
+  timezone?: string;
   latitude?: number;
   longitude?: number;
   coverPhoto?: string;
@@ -63,6 +69,9 @@ export async function createProfessional(userId: string, data: CreateProfessiona
       businessName: data.businessName,
       description: data.description,
       address: data.address,
+      city: data.city,
+      state: data.state,
+      timezone: data.timezone,
       latitude: latitude || 0,
       longitude: longitude || 0,
       taxId: data.taxId,

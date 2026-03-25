@@ -53,7 +53,7 @@ export async function createBooking(userId: string, data: CreateBookingInput) {
     where: { id: professionalId },
     include: { country: { select: { timezone: true } } },
   });
-  const tz = professional?.country?.timezone || 'America/Sao_Paulo';
+  const tz = professional?.timezone || professional?.country?.timezone || 'America/Sao_Paulo';
   const nowInTz = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
   const bookingDateTime = new Date(`${data.date}T${data.startTime}:00`);
   if (bookingDateTime < nowInTz) {
@@ -410,11 +410,11 @@ export async function getAvailableSlots(professionalId: string, date: string, me
   }
 
   // Filter out past time slots if the requested date is today (in the professional's timezone)
-  const professional = await prisma.professional.findUnique({
+  const profForTz = await prisma.professional.findUnique({
     where: { id: professionalId },
-    include: { country: { select: { timezone: true } } },
+    select: { timezone: true, country: { select: { timezone: true } } },
   });
-  const tz = professional?.country?.timezone || 'America/Sao_Paulo';
+  const tz = profForTz?.timezone || profForTz?.country?.timezone || 'America/Sao_Paulo';
   const nowInTz = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
   const todayStr = `${nowInTz.getFullYear()}-${String(nowInTz.getMonth() + 1).padStart(2, '0')}-${String(nowInTz.getDate()).padStart(2, '0')}`;
 
