@@ -40,6 +40,8 @@ import { clientPackageRoutes } from './modules/client-package/client-package.rou
 import { bookingPhotoRoutes } from './modules/booking-photo/booking-photo.routes.js';
 import { legalRoutes } from './modules/legal/legal.routes.js';
 import multipart from '@fastify/multipart';
+import websocket from '@fastify/websocket';
+import { websocketRoutes } from './modules/websocket/websocket.routes.js';
 
 async function bootstrap() {
   const app = Fastify({
@@ -57,6 +59,7 @@ async function bootstrap() {
   await app.register(jwt, { secret: env.JWT_SECRET });
   await app.register(rateLimit, { max: 100, timeWindow: '1 minute' });
   await app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024 } });
+  await app.register(websocket);
 
   // Swagger
   await app.register(swagger, {
@@ -121,6 +124,7 @@ async function bootstrap() {
   await app.register(clientPackageRoutes, { prefix: '/api/client-packages' });
   await app.register(bookingPhotoRoutes, { prefix: '/api/booking-photos' });
   await app.register(legalRoutes, { prefix: '/api/legal' });
+  await app.register(websocketRoutes, { prefix: '/ws' });
 
   // Health check
   app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));

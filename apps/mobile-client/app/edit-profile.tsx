@@ -36,7 +36,10 @@ export default function EditProfileScreen() {
       setAvatar(uploadRes.data.url);
     } catch (err: any) {
       console.error('[Profile] Photo upload error:', err);
-      toast(err?.message || 'Erro ao enviar foto', 'error');
+      const msg = err?.message?.includes('inappropriate_content')
+        ? t('common.inappropriateImage')
+        : (err?.message || t('common.uploadFailed'));
+      toast(msg, 'error');
     } finally {
       setUploadingAvatar(false);
     }

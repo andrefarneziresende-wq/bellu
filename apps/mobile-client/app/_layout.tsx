@@ -18,6 +18,7 @@ import {
   onTokenRefresh,
   onForegroundMessage,
 } from '../services/notifications';
+import { wsManager } from '../services/websocket';
 import '../locales';
 
 // Prevent the native splash screen from auto-hiding
@@ -116,7 +117,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
   const pushRegistered = useRef(false);
 
-  // Register push notifications when authenticated
+  // Register push notifications + WebSocket when authenticated
   useEffect(() => {
     if (isAuthenticated && !pushRegistered.current) {
       pushRegistered.current = true;
@@ -132,6 +133,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
         console.warn('[Push] Setup failed:', e);
       }
 
+      // Connect WebSocket for real-time updates
+      wsManager.connect();
+
       // Listen for FCM token refresh (re-register on server)
       const unsubTokenRefresh = onTokenRefresh((newToken) => {
         useAuthStore.getState().setPushToken(newToken);
@@ -144,10 +148,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       return () => {
         unsubTokenRefresh();
         unsubForeground();
+        wsManager.disconnect();
       };
     }
     if (!isAuthenticated) {
       pushRegistered.current = false;
+      wsManager.disconnect();
     }
   }, [isAuthenticated]);
 

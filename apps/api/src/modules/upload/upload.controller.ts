@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { uploadFile, deleteFile } from '../../config/r2.js';
+import { moderateImage } from '../../config/moderation.js';
 
 export async function uploadHandler(request: FastifyRequest, reply: FastifyReply) {
   const data = await request.file();
@@ -16,6 +17,15 @@ export async function uploadHandler(request: FastifyRequest, reply: FastifyReply
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   if (!allowedTypes.includes(data.mimetype)) {
     return reply.status(400).send({ success: false, error: 'Invalid file type. Use JPEG, PNG, WebP or GIF.' });
+  }
+
+  // Moderate image content before uploading
+  const moderation = await moderateImage(buffer, data.mimetype);
+  if (!moderation.safe) {
+    return reply.status(422).send({
+      success: false,
+      error: 'inappropriate_content',
+    });
   }
 
   const folder = (request.query as { folder?: string }).folder || 'uploads';

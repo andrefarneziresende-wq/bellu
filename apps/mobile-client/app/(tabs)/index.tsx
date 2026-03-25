@@ -11,8 +11,9 @@ import * as Location from 'expo-location';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { categoriesApi, professionalsApi, notificationsApi } from '../../services/api';
+import { categoriesApi, professionalsApi, notificationsApi, conversationsApi } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import { wsManager } from '../../services/websocket';
 import type { Category, Professional } from '@beauty/shared-types';
 
 // Map category icon names (stored as lowercase in DB) to Ionicons names
@@ -39,6 +40,7 @@ export default function HomeScreen() {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   const getCategoryName = useCallback((cat: Category) => {
     const tr = cat.translations?.find((t) => t.locale === i18n.language);
@@ -94,8 +96,26 @@ export default function HomeScreen() {
       notificationsApi.unreadCount()
         .then((res) => setUnreadCount(res.data?.count || 0))
         .catch(() => {});
+      conversationsApi.unreadCount()
+        .then((res) => setUnreadMessages(res.data?.unreadCount || 0))
+        .catch(() => {});
     }, []),
   );
+
+  // Real-time badge updates via WebSocket
+  useEffect(() => {
+    const unsubMsg = wsManager.on('unread_update', (data) => {
+      if (typeof data?.unreadMessages === 'number') {
+        setUnreadMessages(data.unreadMessages);
+      }
+    });
+    const unsubNotif = wsManager.on('notification', (data) => {
+      if (typeof data?.unreadCount === 'number') {
+        setUnreadCount(data.unreadCount);
+      }
+    });
+    return () => { unsubMsg(); unsubNotif(); };
+  }, []);
 
   if (loading) {
     return (
@@ -119,16 +139,28 @@ export default function HomeScreen() {
               </Text>
               <Text style={styles.subtitle}>{t('home.featured')}</Text>
             </View>
-            <Pressable style={styles.bellBtn} onPress={() => router.push('/notifications')}>
-              <Ionicons name="notifications-outline" size={24} color={colors.text} />
-              {unreadCount > 0 && (
-                <View style={styles.bellBadge}>
-                  <Text style={styles.bellBadgeText}>
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </Text>
-                </View>
-              )}
-            </Pressable>
+            <View style={styles.headerIcons}>
+              <Pressable style={styles.bellBtn} onPress={() => router.push('/chat')}>
+                <Ionicons name="chatbubble-outline" size={22} color={colors.text} />
+                {unreadMessages > 0 && (
+                  <View style={styles.bellBadge}>
+                    <Text style={styles.bellBadgeText}>
+                      {unreadMessages > 99 ? '99+' : unreadMessages}
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+              <Pressable style={styles.bellBtn} onPress={() => router.push('/notifications')}>
+                <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                {unreadCount > 0 && (
+                  <View style={styles.bellBadge}>
+                    <Text style={styles.bellBadgeText}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+            </View>
           </View>
         </Animated.View>
 
@@ -214,6 +246,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: spacing.lg },
   header: { paddingTop: spacing.lg, paddingBottom: spacing.xl },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  headerIcons: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   bellBtn: { padding: spacing.sm, position: 'relative' },
   bellBadge: { position: 'absolute', top: 2, right: 2, backgroundColor: '#EF4444', borderRadius: 10, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   bellBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },

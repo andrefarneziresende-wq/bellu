@@ -15,6 +15,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { conversationsApi, type ConversationData } from '../../services/api';
+import { wsManager } from '../../services/websocket';
 
 export default function ChatListScreen() {
   const router = useRouter();
@@ -34,6 +35,15 @@ export default function ChatListScreen() {
 
   useEffect(() => {
     loadConversations();
+
+    // Refresh conversation list when new messages arrive via WebSocket
+    const unsub = wsManager.on('new_message', () => {
+      loadConversations();
+    });
+    const unsubRead = wsManager.on('messages_read', () => {
+      loadConversations();
+    });
+    return () => { unsub(); unsubRead(); };
   }, []);
 
   // Refresh when screen comes into focus

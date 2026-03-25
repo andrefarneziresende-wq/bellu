@@ -10,6 +10,8 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { useAuthStore } from '../../stores/authStore';
 import {
@@ -24,10 +27,12 @@ import {
   uploadApi,
   type ConversationMessageData,
 } from '../../services/api';
+import { wsManager } from '../../services/websocket';
 
 export default function ChatScreen() {
   const { id: conversationId } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const [messages, setMessages] = useState<ConversationMessageData[]>([]);
   const [inputText, setInputText] = useState('');
@@ -35,6 +40,7 @@ export default function ChatScreen() {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [headerName, setHeaderName] = useState('Chat');
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -64,10 +70,39 @@ export default function ChatScreen() {
   useEffect(() => {
     loadMessages();
 
-    // Poll for new messages every 5 seconds
-    pollingRef.current = setInterval(loadMessages, 5000);
+    // Listen for real-time messages via WebSocket
+    const unsubWs = wsManager.on('new_message', (data) => {
+      if (data?.conversationId === conversationId && data?.message) {
+        setMessages((prev) => {
+          // Avoid duplicates
+          if (prev.some((m) => m.id === data.message.id)) return prev;
+          return [...prev, data.message];
+        });
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+        // Mark as read since user is viewing this conversation
+        conversationsApi.markRead(conversationId!).catch(() => {});
+      }
+    });
+
+    // Listen for read receipts
+    const unsubRead = wsManager.on('messages_read', (data) => {
+      if (data?.conversationId === conversationId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.senderId === user?.id && !m.readAt
+              ? { ...m, readAt: new Date().toISOString() }
+              : m,
+          ),
+        );
+      }
+    });
+
+    // Fallback: poll every 30s in case WebSocket disconnects
+    pollingRef.current = setInterval(loadMessages, 30000);
 
     return () => {
+      unsubWs();
+      unsubRead();
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, [conversationId]);
@@ -103,7 +138,10 @@ export default function ChatScreen() {
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     } catch (err: any) {
       console.error('[Chat] Photo upload error:', err);
-      Alert.alert('Erro', err?.message || 'Nao foi possivel enviar a foto');
+      const msg = err?.message?.includes('inappropriate_content')
+        ? t('common.inappropriateImage')
+        : (err?.message || t('common.uploadFailed'));
+      Alert.alert(t('common.error'), msg);
     } finally {
       setUploading(false);
     }
@@ -200,12 +238,14 @@ export default function ChatScreen() {
                 style={[styles.messageBubble, mine ? styles.myMessage : styles.theirMessage]}
               >
                 {item.imageUrl && (
-                  <Image
-                    source={{ uri: item.imageUrl }}
-                    style={styles.messageImage}
-                    contentFit="cover"
-                    transition={200}
-                  />
+                  <Pressable onPress={() => setViewingImage(item.imageUrl)}>
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={styles.messageImage}
+                      contentFit="cover"
+                      transition={200}
+                    />
+                  </Pressable>
                 )}
                 {item.message && (
                   <Text style={[styles.messageText, mine && styles.myMessageText]}>
@@ -264,6 +304,22 @@ export default function ChatScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Fullscreen Image Viewer */}
+      <Modal visible={!!viewingImage} transparent animationType="fade" onRequestClose={() => setViewingImage(null)}>
+        <Pressable style={styles.imageModal} onPress={() => setViewingImage(null)}>
+          <Pressable style={styles.imageModalClose} onPress={() => setViewingImage(null)}>
+            <Ionicons name="close" size={28} color={colors.white} />
+          </Pressable>
+          {viewingImage && (
+            <Image
+              source={{ uri: viewingImage }}
+              style={styles.imageModalFull}
+              contentFit="contain"
+            />
+          )}
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -391,5 +447,22 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     color: colors.textTertiary,
     marginTop: spacing.xs,
+  },
+  imageModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageModalClose: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    zIndex: 10,
+    padding: spacing.sm,
+  },
+  imageModalFull: {
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height * 0.7,
   },
 });

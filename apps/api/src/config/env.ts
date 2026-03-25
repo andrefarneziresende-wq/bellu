@@ -38,6 +38,9 @@ const envSchema = z.object({
   APNS_BUNDLE_ID: z.string().default('com.glamapp.client'),
   APNS_KEY_P8: z.string().default(''),
 
+  // Image moderation (Claude API)
+  ANTHROPIC_API_KEY: z.string().default(''),
+
   // Payment gateways (optional in dev)
   STRIPE_SECRET_KEY: z.string().default('sk_test_placeholder'),
   STRIPE_WEBHOOK_SECRET: z.string().default('whsec_placeholder'),

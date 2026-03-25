@@ -1,6 +1,7 @@
 import { prisma } from '../../config/prisma.js';
 import { NotFoundError, ForbiddenError } from '../../shared/errors.js';
 import { sendPushToUser } from '../notification/push.service.js';
+import { sendToUser } from '../websocket/websocket.service.js';
 
 /**
  * Get or create a conversation between a client and a professional.
@@ -209,6 +210,26 @@ export async function sendMessage(
     data: { conversationId, senderId },
   }).catch(() => {}); // fire-and-forget, don't block the response
 
+  // Real-time WebSocket: notify receiver of new message
+  sendToUser(receiverUserId, {
+    type: 'new_message',
+    data: { conversationId, message },
+  });
+
+  // Also update sender's other devices
+  sendToUser(senderId, {
+    type: 'new_message',
+    data: { conversationId, message },
+  });
+
+  // Send updated unread count to receiver
+  getUnreadCount(receiverUserId).then((result) => {
+    sendToUser(receiverUserId, {
+      type: 'unread_update',
+      data: { unreadMessages: result.unreadCount },
+    });
+  }).catch(() => {});
+
   return message;
 }
 
@@ -234,6 +255,19 @@ export async function markAsRead(conversationId: string, userId: string) {
       readAt: null,
     },
     data: { readAt: new Date() },
+  });
+
+  // Notify the other party that messages were read (for read receipts)
+  const otherUserId = isClient ? conversation.professional.userId : conversation.clientId;
+  sendToUser(otherUserId, {
+    type: 'messages_read',
+    data: { conversationId, readBy: userId },
+  });
+
+  // Update unread count for the reader
+  sendToUser(userId, {
+    type: 'unread_update',
+    data: { unreadMessages: Math.max(0, (await getUnreadCount(userId)).unreadCount) },
   });
 
   return { markedAsRead: result.count };

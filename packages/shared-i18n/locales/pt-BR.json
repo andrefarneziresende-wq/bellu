@@ -17,7 +17,9 @@
     "or": "ou",
     "noResults": "Nenhum resultado encontrado",
     "tryAgain": "Tentar novamente",
-    "required": "Campo obrigatório"
+    "required": "Campo obrigatório",
+    "inappropriateImage": "Esta imagem não pode ser enviada pois contém conteúdo impróprio.",
+    "uploadFailed": "Não foi possível enviar a foto. Tente novamente."
   },
   "auth": {
     "login": "Entrar",

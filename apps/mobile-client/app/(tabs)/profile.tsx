@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { useAuthStore } from '../../stores/authStore';
 import { removePushTokenFromServer } from '../../services/notifications';
@@ -42,9 +43,13 @@ export default function ProfileScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* Avatar & Name */}
         <Animated.View entering={FadeInDown.delay(100)} style={styles.header}>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={40} color={colors.white} />
-          </View>
+          {user?.avatar ? (
+            <Image source={{ uri: user.avatar }} style={styles.avatar} contentFit="cover" cachePolicy="memory" />
+          ) : (
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Ionicons name="person" size={40} color={colors.white} />
+            </View>
+          )}
           <Text style={styles.name}>{user?.name || 'User'}</Text>
           <Text style={styles.email}>{user?.email || user?.phone || ''}</Text>
           <Pressable style={styles.editBtn} onPress={() => router.push('/edit-profile')}>
@@ -82,7 +87,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scroll: { paddingHorizontal: spacing.lg },
   header: { alignItems: 'center', paddingTop: spacing.xxl, paddingBottom: spacing.xl },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  avatar: { width: 80, height: 80, borderRadius: 40 },
+  avatarPlaceholder: { backgroundColor: colors.primary, justifyContent: 'center' as const, alignItems: 'center' as const },
   name: { fontSize: typography.sizes.xl, fontWeight: typography.weights.bold, color: colors.text, marginTop: spacing.md },
   email: { fontSize: typography.sizes.sm, color: colors.textSecondary, marginTop: spacing.xs },
   editBtn: { marginTop: spacing.md, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, borderRadius: radii.full, borderWidth: 1, borderColor: colors.primary },

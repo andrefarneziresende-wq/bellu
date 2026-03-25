@@ -2,6 +2,7 @@ import { prisma } from '../../config/prisma.js';
 import { env } from '../../config/env.js';
 import jwt from 'jsonwebtoken';
 import http2 from 'http2';
+import { sendToUser } from '../websocket/websocket.service.js';
 
 // ============================================================
 // APNs Direct (iOS) + FCM (Android future)
@@ -270,7 +271,7 @@ export async function unregisterPushToken(userId: string, token: string) {
  */
 export async function sendPushToUser(userId: string, payload: PushNotificationPayload) {
   // Save in-app notification
-  await prisma.notification.create({
+  const notification = await prisma.notification.create({
     data: {
       userId,
       title: payload.title,
@@ -278,6 +279,15 @@ export async function sendPushToUser(userId: string, payload: PushNotificationPa
       type: payload.type,
       data: payload.data ? JSON.stringify(payload.data) : null,
     },
+  });
+
+  // Real-time WebSocket: send notification + updated unread count
+  const unreadNotifCount = await prisma.notification.count({
+    where: { userId, read: false },
+  });
+  sendToUser(userId, {
+    type: 'notification',
+    data: { notification, unreadCount: unreadNotifCount },
   });
 
   // Check if APNs or FCM is configured
