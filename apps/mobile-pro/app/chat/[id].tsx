@@ -19,32 +19,31 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { colors, spacing, radii } from '../../theme/colors';
-import { useAuthStore } from '../../stores/authStore';
 import {
   conversationsApi,
   uploadImage,
   type ConversationMessageData,
 } from '../../services/api';
 import { useUnreadMessages } from '../../stores/unreadStore';
+import { wsManager } from '../../services/websocket';
 
 export default function ChatScreen() {
   const { id: conversationId } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t } = useTranslation();
-  const proContext = useAuthStore((s) => s.proContext);
-  const professional = useAuthStore((s) => s.professional);
   const [messages, setMessages] = useState<ConversationMessageData[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [headerName, setHeaderName] = useState('Chat');
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSentRef = useRef(0);
   const flatListRef = useRef<FlatList>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const refreshUnread = useUnreadMessages((s) => s.refresh);
-
-  // The logged-in user's userId (from proContext or professional)
-  const myUserId = professional?.id; // This may not match — we'll use senderId comparison from conversation
+  const myUserIdRef = useRef<string | null>(null);
 
   const loadMessages = async () => {
     if (!conversationId) return;
@@ -57,6 +56,7 @@ export default function ChatScreen() {
       const conv = data.conversation;
       if (conv) {
         setHeaderName(conv.client.name);
+        myUserIdRef.current = conv.professional.userId;
       }
 
       // Mark as read and refresh unread badge
@@ -70,9 +70,51 @@ export default function ChatScreen() {
 
   useEffect(() => {
     loadMessages();
-    pollingRef.current = setInterval(loadMessages, 5000);
+
+    // Real-time messages via WebSocket
+    const unsubMsg = wsManager.on('new_message', (data) => {
+      if (data?.conversationId === conversationId && data?.message) {
+        if (data.message.senderId === myUserIdRef.current) return;
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === data.message.id)) return prev;
+          return [...prev, data.message];
+        });
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+        conversationsApi.markRead(conversationId!).then(() => refreshUnread()).catch(() => {});
+      }
+    });
+
+    // Typing indicator
+    const unsubTyping = wsManager.on('typing', (data) => {
+      if (data?.conversationId === conversationId && data?.userId !== myUserIdRef.current) {
+        setIsTyping(true);
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000);
+      }
+    });
+
+    // Read receipts
+    const unsubRead = wsManager.on('messages_read', (data) => {
+      if (data?.conversationId === conversationId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.senderId === myUserIdRef.current && !m.readAt
+              ? { ...m, readAt: new Date().toISOString() }
+              : m,
+          ),
+        );
+      }
+    });
+
+    // Fallback polling every 30s
+    pollingRef.current = setInterval(loadMessages, 30000);
+
     return () => {
+      unsubMsg();
+      unsubTyping();
+      unsubRead();
       if (pollingRef.current) clearInterval(pollingRef.current);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, [conversationId]);
 
@@ -153,14 +195,6 @@ export default function ChatScreen() {
     ]);
   };
 
-  // Determine if message is mine — for professional, check if sender is NOT the client
-  const isMyMessage = (msg: ConversationMessageData) => {
-    // In conversation context, the professional's user sends messages
-    // We compare sender name with professional business name as fallback
-    // But ideally we match by the conversation's professional.userId
-    return msg.senderId !== messages[0]?.conversationId; // fallback; real check below
-  };
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -170,12 +204,6 @@ export default function ChatScreen() {
       </SafeAreaView>
     );
   }
-
-  // Detect which userId is the client from conversation data
-  // Messages from anyone who is NOT the client = my messages (professional side)
-  const clientSenderId = messages.length > 0
-    ? messages.find((m) => m.sender.name !== headerName)?.senderId || null
-    : null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -248,6 +276,13 @@ export default function ChatScreen() {
           }}
         />
 
+        {/* Typing indicator */}
+        {isTyping && (
+          <View style={styles.typingContainer}>
+            <Text style={styles.typingText}>{t('chat.typing', 'digitando...')}</Text>
+          </View>
+        )}
+
         {/* Input */}
         <View style={styles.inputContainer}>
           <Pressable onPress={handleImageOptions} style={styles.attachButton} disabled={uploading}>
@@ -260,7 +295,14 @@ export default function ChatScreen() {
           <TextInput
             style={styles.textInput}
             value={inputText}
-            onChangeText={setInputText}
+            onChangeText={(text) => {
+              setInputText(text);
+              const now = Date.now();
+              if (now - lastTypingSentRef.current > 2000 && conversationId) {
+                lastTypingSentRef.current = now;
+                wsManager.send({ type: 'typing', conversationId });
+              }
+            }}
             placeholder={t('conversations.typePlaceholder', 'Digite sua mensagem...')}
             placeholderTextColor={colors.textSecondary}
             multiline
@@ -352,6 +394,16 @@ const styles = StyleSheet.create({
   },
   myMessageTime: {
     color: 'rgba(255,255,255,0.7)',
+  },
+  typingContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 4,
+    backgroundColor: colors.white,
+  },
+  typingText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontStyle: 'italic' as const,
   },
   inputContainer: {
     flexDirection: 'row',

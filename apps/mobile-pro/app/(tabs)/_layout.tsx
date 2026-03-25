@@ -6,6 +6,7 @@ import { Platform, StyleSheet } from 'react-native';
 import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../stores/authStore';
 import { useUnreadMessages } from '../../stores/unreadStore';
+import { wsManager } from '../../services/websocket';
 
 // Map each tab to the permissions required to see it
 // Empty array = always visible
@@ -23,11 +24,26 @@ export default function TabLayout() {
   const unreadCount = useUnreadMessages((s) => s.count);
   const refreshUnread = useUnreadMessages((s) => s.refresh);
 
-  // Poll unread count every 30s
+  // Connect WebSocket and listen for real-time updates
   useEffect(() => {
+    wsManager.connect();
     refreshUnread();
+
+    const unsubMsg = wsManager.on('new_message', () => refreshUnread());
+    const unsubUnread = wsManager.on('unread_update', (data) => {
+      if (data?.unreadMessages !== undefined) {
+        useUnreadMessages.setState({ count: data.unreadMessages });
+      }
+    });
+
+    // Fallback polling every 30s
     const interval = setInterval(refreshUnread, 30_000);
-    return () => clearInterval(interval);
+    return () => {
+      unsubMsg();
+      unsubUnread();
+      clearInterval(interval);
+      wsManager.disconnect();
+    };
   }, []);
 
   const canSee = (tab: string) => {
