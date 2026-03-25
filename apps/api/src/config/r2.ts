@@ -1,15 +1,17 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import * as Minio from 'minio';
 import { env } from './env.js';
 import { randomUUID } from 'crypto';
 
-const s3 = new S3Client({
+// Extract hostname from endpoint URL (minio expects host without protocol)
+const endpointUrl = new URL(env.R2_ENDPOINT || 'https://localhost');
+
+const minio = new Minio.Client({
+  endPoint: endpointUrl.hostname,
+  useSSL: true,
+  accessKey: env.R2_ACCESS_KEY_ID,
+  secretKey: env.R2_SECRET_ACCESS_KEY,
   region: 'auto',
-  endpoint: env.R2_ENDPOINT,
-  credentials: {
-    accessKeyId: env.R2_ACCESS_KEY_ID,
-    secretAccessKey: env.R2_SECRET_ACCESS_KEY,
-  },
-  forcePathStyle: true,
+  pathStyle: true,
 });
 
 export async function uploadFile(
@@ -21,16 +23,10 @@ export async function uploadFile(
   const ext = originalName.split('.').pop() || 'jpg';
   const key = `${folder}/${randomUUID()}.${ext}`;
 
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: env.R2_BUCKET_NAME,
-      Key: key,
-      Body: buffer,
-      ContentType: contentType,
-    }),
-  );
+  await minio.putObject(env.R2_BUCKET_NAME, key, buffer, buffer.length, {
+    'Content-Type': contentType,
+  });
 
-  // Return public URL or key
   if (env.R2_PUBLIC_URL) {
     return `${env.R2_PUBLIC_URL}/${key}`;
   }
@@ -38,15 +34,9 @@ export async function uploadFile(
 }
 
 export async function deleteFile(key: string): Promise<void> {
-  // If it's a full URL, extract the key
   const fileKey = env.R2_PUBLIC_URL && key.startsWith(env.R2_PUBLIC_URL)
     ? key.replace(`${env.R2_PUBLIC_URL}/`, '')
     : key;
 
-  await s3.send(
-    new DeleteObjectCommand({
-      Bucket: env.R2_BUCKET_NAME,
-      Key: fileKey,
-    }),
-  );
+  await minio.removeObject(env.R2_BUCKET_NAME, fileKey);
 }

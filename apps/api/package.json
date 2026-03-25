@@ -17,8 +17,7 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.540.0",
-    "@beauty/shared-i18n": "*",
+        "@beauty/shared-i18n": "*",
     "@beauty/shared-types": "*",
     "@beauty/shared-utils": "*",
     "@beauty/shared-validators": "*",
@@ -35,6 +34,7 @@
     "firebase-admin": "^13.7.0",
     "google-auth-library": "^10.6.2",
     "jsonwebtoken": "^9.0.3",
+    "minio": "^8.0.7",
     "resend": "^6.9.4",
     "tsx": "^4.19.0",
     "zod": "^3.23.0"
