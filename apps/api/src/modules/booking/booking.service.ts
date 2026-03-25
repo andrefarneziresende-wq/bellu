@@ -320,7 +320,7 @@ export async function updateBookingStatus(
   return updated;
 }
 
-export async function getAvailableSlots(professionalId: string, date: string) {
+export async function getAvailableSlots(professionalId: string, date: string, memberId?: string) {
   const targetDate = new Date(date);
   const dayOfWeek = targetDate.getUTCDay();
 
@@ -337,14 +337,29 @@ export async function getAvailableSlots(professionalId: string, date: string) {
     return [];
   }
 
+  // Get active members count
+  const activeMembers = await prisma.professionalMember.findMany({
+    where: { professionalId, active: true },
+    select: { id: true },
+  });
+  const memberCount = activeMembers.length;
+
   // Get existing bookings for this date
+  const bookingWhere: Record<string, unknown> = {
+    professionalId,
+    date: targetDate,
+    status: { in: ['CONFIRMED', 'PENDING'] },
+  };
+
+  // If filtering by specific member, only check that member's bookings
+  if (memberId) {
+    bookingWhere.memberId = memberId;
+  }
+
   const existingBookings = await prisma.booking.findMany({
-    where: {
-      professionalId,
-      date: targetDate,
-      status: { in: ['CONFIRMED', 'PENDING'] },
-    },
+    where: bookingWhere,
     orderBy: { startTime: 'asc' },
+    select: { startTime: true, endTime: true, memberId: true },
   });
 
   // Generate 30-minute slots within working hours
@@ -356,15 +371,36 @@ export async function getAvailableSlots(professionalId: string, date: string) {
   for (let m = startMinutes; m < endMinutes; m += slotInterval) {
     const slotTime = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
-    // Check if this slot overlaps with any existing booking
-    const isOccupied = existingBookings.some((booking: { startTime: string; endTime: string }) => {
-      const bookingStart = timeToMinutes(booking.startTime);
-      const bookingEnd = timeToMinutes(booking.endTime);
-      return m >= bookingStart && m < bookingEnd;
-    });
-
-    if (!isOccupied) {
-      slots.push(slotTime);
+    if (memberId) {
+      // Specific member selected: slot occupied if that member has a booking
+      const isOccupied = existingBookings.some((b) => {
+        const bStart = timeToMinutes(b.startTime);
+        const bEnd = timeToMinutes(b.endTime);
+        return m >= bStart && m < bEnd;
+      });
+      if (!isOccupied) slots.push(slotTime);
+    } else if (memberCount === 0) {
+      // No members (solo professional): slot occupied if any booking exists
+      const isOccupied = existingBookings.some((b) => {
+        const bStart = timeToMinutes(b.startTime);
+        const bEnd = timeToMinutes(b.endTime);
+        return m >= bStart && m < bEnd;
+      });
+      if (!isOccupied) slots.push(slotTime);
+    } else {
+      // Multiple members: slot available if at least one member is free
+      const busyMembersAtSlot = new Set<string | null>();
+      for (const b of existingBookings) {
+        const bStart = timeToMinutes(b.startTime);
+        const bEnd = timeToMinutes(b.endTime);
+        if (m >= bStart && m < bEnd) {
+          busyMembersAtSlot.add(b.memberId);
+        }
+      }
+      // Slot available if not ALL members are busy
+      if (busyMembersAtSlot.size < memberCount) {
+        slots.push(slotTime);
+      }
     }
   }
 

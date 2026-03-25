@@ -161,8 +161,11 @@ export const bookingsApi = {
       body: JSON.stringify({ status: 'cancelled' }),
     }),
 
-  availableSlots: (professionalId: string, date: string) =>
-    request<ApiResponse<string[]>>(`/bookings/available-slots/${professionalId}?date=${date}`),
+  availableSlots: (professionalId: string, date: string, memberId?: string) => {
+    const params = new URLSearchParams({ date });
+    if (memberId) params.set('memberId', memberId);
+    return request<ApiResponse<string[]>>(`/bookings/available-slots/${professionalId}?${params}`);
+  },
 };
 
 // --- Reviews ---

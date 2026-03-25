@@ -100,13 +100,13 @@ export async function updateStatusHandler(
 }
 
 export async function availableSlotsHandler(
-  request: FastifyRequest<{ Params: { professionalId: string }; Querystring: { date: string } }>,
+  request: FastifyRequest<{ Params: { professionalId: string }; Querystring: { date: string; memberId?: string } }>,
   reply: FastifyReply,
 ) {
   const { professionalId } = request.params;
-  const { date } = request.query;
+  const { date, memberId } = request.query;
 
-  const slots = await bookingService.getAvailableSlots(professionalId, date);
+  const slots = await bookingService.getAvailableSlots(professionalId, date, memberId);
 
   return reply.status(200).send({
     success: true,

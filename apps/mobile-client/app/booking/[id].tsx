@@ -227,14 +227,14 @@ export default function BookingScreen() {
     fetchData();
   }, [id]);
 
-  // Fetch available time slots
+  // Fetch available time slots (re-fetch when date or member changes)
   useEffect(() => {
     if (!id || !selectedDate) return;
     const fetchSlots = async () => {
       setSlotsLoading(true);
       setSelectedTime(null);
       try {
-        const res = await bookingsApi.availableSlots(id, selectedDate);
+        const res = await bookingsApi.availableSlots(id, selectedDate, selectedMember?.id);
         setTimeSlots(res.data);
       } catch {
         setTimeSlots([]);
@@ -243,7 +243,7 @@ export default function BookingScreen() {
       }
     };
     fetchSlots();
-  }, [id, selectedDate]);
+  }, [id, selectedDate, selectedMember]);
 
   const handleConfirm = async () => {
     if (!id || !selectedService || !selectedTime) return;
@@ -387,43 +387,12 @@ export default function BookingScreen() {
 
         <View style={styles.divider} />
 
-        {/* Step 3: Time Selection */}
-        <Animated.View entering={FadeInDown.delay(250)}>
-          <View style={styles.stepHeader}>
-            <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>3</Text></View>
-            <Text style={styles.sectionTitle}>{t('booking.selectTime')}</Text>
-          </View>
-          {slotsLoading ? (
-            <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: spacing.lg }} />
-          ) : timeSlots.length === 0 ? (
-            <View style={styles.noSlotsContainer}>
-              <Ionicons name="time-outline" size={32} color={colors.border} />
-              <Text style={styles.emptyText}>{t('booking.noSlots')}</Text>
-            </View>
-          ) : (
-            <View style={styles.timeGrid}>
-              {timeSlots.map((time) => (
-                <Pressable
-                  key={time}
-                  style={[styles.timeSlot, selectedTime === time && styles.timeSlotActive]}
-                  onPress={() => setSelectedTime(time)}
-                >
-                  <Text style={[styles.timeText, selectedTime === time && styles.timeTextActive]}>
-                    {time}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
-        </Animated.View>
-
-        {/* Step 4: Staff (only if members exist, shown after time selected) */}
-        {members.length > 0 && selectedTime && (
+        {/* Step 3: Staff (only if members exist) */}
+        {members.length > 0 && (
           <>
-            <View style={styles.divider} />
-            <Animated.View entering={FadeInDown.delay(100)}>
+            <Animated.View entering={FadeInDown.delay(250)}>
               <View style={styles.stepHeader}>
-                <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>4</Text></View>
+                <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>3</Text></View>
                 <Text style={styles.sectionTitle}>{t('booking.selectStaff')}</Text>
               </View>
               <Text style={styles.staffHint}>{t('booking.staffHint')}</Text>
@@ -460,8 +429,39 @@ export default function BookingScreen() {
                 ))}
               </ScrollView>
             </Animated.View>
+            <View style={styles.divider} />
           </>
         )}
+
+        {/* Step N: Time Selection (step 3 if no members, step 4 if members exist) */}
+        <Animated.View entering={FadeInDown.delay(300)}>
+          <View style={styles.stepHeader}>
+            <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>{members.length > 0 ? '4' : '3'}</Text></View>
+            <Text style={styles.sectionTitle}>{t('booking.selectTime')}</Text>
+          </View>
+          {slotsLoading ? (
+            <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: spacing.lg }} />
+          ) : timeSlots.length === 0 ? (
+            <View style={styles.noSlotsContainer}>
+              <Ionicons name="time-outline" size={32} color={colors.border} />
+              <Text style={styles.emptyText}>{t('booking.noSlots')}</Text>
+            </View>
+          ) : (
+            <View style={styles.timeGrid}>
+              {timeSlots.map((time) => (
+                <Pressable
+                  key={time}
+                  style={[styles.timeSlot, selectedTime === time && styles.timeSlotActive]}
+                  onPress={() => setSelectedTime(time)}
+                >
+                  <Text style={[styles.timeText, selectedTime === time && styles.timeTextActive]}>
+                    {time}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </Animated.View>
 
         {/* Summary */}
         {canConfirm && (
