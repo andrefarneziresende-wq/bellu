@@ -166,6 +166,7 @@ export async function listUserBookings(
       include: {
         service: true,
         professional: { select: { id: true, businessName: true, avatarPhoto: true } },
+        review: { select: { id: true, rating: true } },
       },
       orderBy: { date: 'desc' },
       skip: (page - 1) * perPage,

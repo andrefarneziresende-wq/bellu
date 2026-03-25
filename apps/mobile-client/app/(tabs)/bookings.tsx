@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +22,7 @@ const statusConfig: Record<string, { variant: 'success' | 'warning' | 'default' 
 
 export default function BookingsScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,9 +41,12 @@ export default function BookingsScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+  // Refresh bookings when tab gains focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchBookings();
+    }, [fetchBookings]),
+  );
 
   const upcoming = bookings.filter((b) => {
     const status = (b.status || '').toLowerCase();
@@ -183,6 +189,15 @@ export default function BookingsScreen() {
                       <Text style={styles.cancelText}>{t('booking.cancelBooking')}</Text>
                     </Pressable>
                   )}
+                  {statusKey === 'completed' && !item.review && (
+                    <Pressable
+                      style={styles.reviewBtn}
+                      onPress={() => router.push(`/review/${item.id}`)}
+                    >
+                      <Ionicons name="star-outline" size={16} color={colors.primary} />
+                      <Text style={styles.reviewText}>{t('review.leaveReview')}</Text>
+                    </Pressable>
+                  )}
                 </Card>
               </Animated.View>
             );
@@ -213,6 +228,8 @@ const styles = StyleSheet.create({
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xxxl },
   cancelBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.md, alignSelf: 'flex-start', paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radii.md, backgroundColor: '#FEE2E2' },
   cancelText: { fontSize: typography.sizes.xs, fontWeight: typography.weights.semibold, color: colors.error || '#E74C3C' },
+  reviewBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.md, alignSelf: 'flex-start', paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radii.md, backgroundColor: '#FEF3C7' },
+  reviewText: { fontSize: typography.sizes.xs, fontWeight: typography.weights.semibold, color: colors.accent },
   emptyTitle: { fontSize: typography.sizes.lg, fontWeight: typography.weights.semibold, color: colors.text, marginTop: spacing.lg },
   emptyMessage: { fontSize: typography.sizes.sm, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm },
 });
