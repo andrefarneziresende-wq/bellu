@@ -8,11 +8,14 @@ const endpointUrl = new URL(env.R2_ENDPOINT || 'https://localhost');
 const minio = new Minio.Client({
   endPoint: endpointUrl.hostname,
   useSSL: true,
-  accessKey: env.R2_ACCESS_KEY_ID,
-  secretKey: env.R2_SECRET_ACCESS_KEY,
+  accessKey: env.R2_ACCESS_KEY_ID.trim(),
+  secretKey: env.R2_SECRET_ACCESS_KEY.trim(),
   region: 'auto',
   pathStyle: true,
 });
+
+// Log R2 config on startup (no secrets)
+console.log(`[R2] endpoint=${endpointUrl.hostname} bucket=${env.R2_BUCKET_NAME} keyLen=${env.R2_ACCESS_KEY_ID.length}/${env.R2_ACCESS_KEY_ID.trim().length} secretLen=${env.R2_SECRET_ACCESS_KEY.length}/${env.R2_SECRET_ACCESS_KEY.trim().length}`);
 
 export async function uploadFile(
   buffer: Buffer,
