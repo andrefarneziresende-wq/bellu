@@ -170,7 +170,7 @@ export default function BookingsScreen() {
                     <View style={styles.actionRow}>
                       <Pressable
                         style={styles.rescheduleBtn}
-                        onPress={() => router.push(`/booking/${item.professionalId}`)}
+                        onPress={() => router.push(`/booking/${item.professionalId}?serviceId=${item.serviceId}&memberId=${item.member?.id || ''}`)}
                       >
                         <Ionicons name="calendar-outline" size={16} color={colors.primary} />
                         <Text style={styles.rescheduleText}>{t('booking.reschedule')}</Text>

@@ -169,7 +169,7 @@ const calStyles = StyleSheet.create({
 export default function BookingScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, serviceId: preServiceId, memberId: preMemberId } = useLocalSearchParams<{ id: string; serviceId?: string; memberId?: string }>();
 
   const [professional, setProfessional] = useState<Professional | null>(null);
   const [services, setServices] = useState<Service[]>([]);
@@ -216,8 +216,17 @@ export default function BookingScreen() {
         ]);
         const servData = servRes.status === 'fulfilled' ? servRes.value.data : [];
         setServices(servData);
-        if (servData.length > 0) setSelectedService(servData[0]);
-        setMembers(membRes.status === 'fulfilled' ? (membRes.value.data || []) : []);
+        // Pre-select service from reschedule params, or default to first
+        const preService = preServiceId ? servData.find((s: Service) => s.id === preServiceId) : null;
+        setSelectedService(preService || servData[0] || null);
+
+        const membData = membRes.status === 'fulfilled' ? (membRes.value.data || []) : [];
+        setMembers(membData);
+        // Pre-select member from reschedule params
+        if (preMemberId) {
+          const preMember = membData.find((m: StaffMember) => m.id === preMemberId);
+          if (preMember) setSelectedMember(preMember);
+        }
       } catch (error: any) {
         toast(error.message || t('common.error'), 'error');
       } finally {
@@ -235,15 +244,16 @@ export default function BookingScreen() {
       setSelectedTime(null);
       try {
         const res = await bookingsApi.availableSlots(id, selectedDate, selectedMember?.id);
-        // Filter out past time slots if the selected date is today
-        const todayStr = new Date().toISOString().split('T')[0];
+        // Filter out past time slots if the selected date is today (use local time, not UTC)
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         if (selectedDate === todayStr) {
-          const now = new Date();
           const nowMinutes = now.getHours() * 60 + now.getMinutes();
-          setTimeSlots(res.data.filter((slot: string) => {
+          const filtered = res.data.filter((slot: string) => {
             const [h, m] = slot.split(':').map(Number);
             return h * 60 + m > nowMinutes;
-          }));
+          });
+          setTimeSlots(filtered);
         } else {
           setTimeSlots(res.data);
         }
