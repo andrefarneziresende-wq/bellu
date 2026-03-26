@@ -29,6 +29,8 @@ export default function NotificationsPage() {
   const [body, setBody] = useState('');
   const [target, setTarget] = useState('client');
   const [country, setCountry] = useState('');
+  const [filterState, setFilterState] = useState('');
+  const [filterCity, setFilterCity] = useState('');
   const [sendMode, setSendMode] = useState<'now' | 'scheduled'>('now');
   const [sendInDays, setSendInDays] = useState(1);
   const [sending, setSending] = useState(false);
@@ -74,6 +76,8 @@ export default function NotificationsPage() {
         target,
       };
       if (country) payload.countryId = country;
+      if (filterState) payload.state = filterState;
+      if (filterCity) payload.city = filterCity.trim();
       if (sendMode === 'scheduled') payload.sendInDays = sendInDays;
 
       await apiFetch('/api/notifications/admin/schedule', {
@@ -89,6 +93,8 @@ export default function NotificationsPage() {
       setTitle('');
       setBody('');
       setCountry('');
+      setFilterState('');
+      setFilterCity('');
       setSendMode('now');
       loadScheduled();
     } catch (err) {
@@ -210,16 +216,34 @@ export default function NotificationsPage() {
             </div>
 
             <div>
-              <Label>Filtro por pais (opcional)</Label>
-              <select
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="">Todos os paises</option>
-                <option value="BR">Brasil</option>
-                <option value="ES">Espanha</option>
-              </select>
+              <Label>Filtros de localidade (opcional)</Label>
+              <div className="mt-1 grid grid-cols-3 gap-2">
+                <select
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="">Todos os paises</option>
+                  <option value="BR">Brasil</option>
+                  <option value="ES">Espanha</option>
+                </select>
+                <select
+                  value={filterState}
+                  onChange={(e) => setFilterState(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="">Todos os estados</option>
+                  {['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'].map((uf) => (
+                    <option key={uf} value={uf}>{uf}</option>
+                  ))}
+                </select>
+                <Input
+                  value={filterCity}
+                  onChange={(e) => setFilterCity(e.target.value)}
+                  placeholder="Cidade"
+                  className="h-10"
+                />
+              </div>
             </div>
 
             <div>

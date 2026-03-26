@@ -122,11 +122,13 @@ export async function notificationRoutes(app: FastifyInstance) {
   // ============================================================
 
   // Admin: Send broadcast notification to all clients
-  app.post<{ Body: { title: string; body: string; countryId?: string } }>(
+  app.post<{ Body: { title: string; body: string; countryId?: string; city?: string; state?: string } }>(
     '/admin/broadcast',
     { preHandler: [authenticate] },
     async (request, reply) => {
-      const { title, body, countryId } = request.body as { title: string; body: string; countryId?: string };
+      const { title, body, countryId, city, state } = request.body as {
+        title: string; body: string; countryId?: string; city?: string; state?: string;
+      };
       if (!title || !body) {
         return reply.status(400).send({ success: false, message: 'Title and body are required' });
       }
@@ -134,6 +136,7 @@ export async function notificationRoutes(app: FastifyInstance) {
       const result = await broadcastPush(
         { title, body, type: 'admin_broadcast' },
         countryId,
+        { city, state },
       );
 
       return reply.status(200).send({ success: true, data: result });

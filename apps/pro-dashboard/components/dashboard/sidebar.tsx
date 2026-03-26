@@ -24,6 +24,7 @@ import { useTranslation } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth-context';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
 import { apiFetch } from '@/lib/api';
+import { wsManager } from '@/lib/websocket';
 
 // Each nav item maps to the permissions needed to see it
 // Empty array = always visible; '*' check handled by hasAnyPermission
@@ -65,7 +66,24 @@ export function Sidebar() {
   useEffect(() => {
     fetchUnreadCounts();
     const interval = setInterval(fetchUnreadCounts, 30000);
-    return () => clearInterval(interval);
+
+    // Listen to WebSocket for real-time badge updates
+    const unsubMsg = wsManager.on('new_message', () => {
+      fetchUnreadCounts();
+    });
+    const unsubRead = wsManager.on('messages_read', () => {
+      fetchUnreadCounts();
+    });
+    const unsubUnread = wsManager.on('unread_update', () => {
+      fetchUnreadCounts();
+    });
+
+    return () => {
+      clearInterval(interval);
+      unsubMsg();
+      unsubRead();
+      unsubUnread();
+    };
   }, [fetchUnreadCounts]);
 
   // Filter navigation items based on permissions

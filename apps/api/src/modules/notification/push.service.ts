@@ -390,30 +390,51 @@ export async function sendPushToUsers(userIds: string[], payload: PushNotificati
 /**
  * Broadcast push notification to ALL active users.
  */
-export async function broadcastPush(payload: PushNotificationPayload, countryId?: string) {
-  const where: Record<string, unknown> = { active: true };
-  if (countryId) where.countryId = countryId;
+export async function broadcastPush(
+  payload: PushNotificationPayload,
+  countryId?: string,
+  filters?: { city?: string; state?: string },
+) {
+  let userIds: string[];
 
-  const users = await prisma.user.findMany({
-    where,
-    select: { id: true },
-  });
+  // If city or state filter is set, find users who booked with professionals in that area
+  if (filters?.city || filters?.state) {
+    const proWhere: Record<string, unknown> = {};
+    if (filters.city) proWhere.city = filters.city;
+    if (filters.state) proWhere.state = filters.state;
+    if (countryId) proWhere.countryId = countryId;
 
-  console.log(`[Push] Broadcasting to ${users.length} users`);
+    const bookings = await prisma.booking.findMany({
+      where: {
+        professional: proWhere,
+        userId: { not: null },
+      },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+    userIds = bookings.map((b) => b.userId).filter(Boolean) as string[];
+  } else {
+    const where: Record<string, unknown> = { active: true };
+    if (countryId) where.countryId = countryId;
+    const users = await prisma.user.findMany({ where, select: { id: true } });
+    userIds = users.map((u) => u.id);
+  }
 
-  if (users.length === 0) {
+  console.log(`[Push] Broadcasting to ${userIds.length} users`);
+
+  if (userIds.length === 0) {
     return { userCount: 0 };
   }
 
   const batchSize = 50;
-  for (let i = 0; i < users.length; i += batchSize) {
-    const batch = users.slice(i, i + batchSize);
+  for (let i = 0; i < userIds.length; i += batchSize) {
+    const batch = userIds.slice(i, i + batchSize);
     await Promise.allSettled(
-      batch.map((u) => sendPushToUser(u.id, payload)),
+      batch.map((id) => sendPushToUser(id, payload)),
     );
   }
 
-  return { userCount: users.length };
+  return { userCount: userIds.length };
 }
 
 /**

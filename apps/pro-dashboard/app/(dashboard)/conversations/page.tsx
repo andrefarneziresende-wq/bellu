@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MessageSquare, Send, Loader2, ImageIcon, ArrowLeft } from 'lucide-react';
@@ -86,6 +85,11 @@ export default function ConversationsPage() {
     setSelectedId(convId);
     setLoadingMessages(true);
     loadMessages(convId).finally(() => setLoadingMessages(false));
+
+    // Zero out the unread badge for this conversation immediately
+    setConversations((prev) =>
+      prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c)),
+    );
 
     // Start polling
     if (pollingRef.current) clearInterval(pollingRef.current);
