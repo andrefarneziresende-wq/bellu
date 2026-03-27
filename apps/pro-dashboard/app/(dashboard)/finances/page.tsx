@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DollarSign, TrendingUp, TrendingDown, Plus, Loader2, Receipt, RefreshCw, AlertCircle } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Plus, Loader2, Receipt, RefreshCw, AlertCircle, Pencil, Trash2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useTranslation } from '@/lib/i18n';
@@ -64,6 +64,7 @@ export default function FinancesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<ExpenseFieldErrors>({});
   const toast = useToast();
@@ -131,6 +132,59 @@ export default function FinancesPage() {
       toast.error(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleEditExpense = (expense: Expense) => {
+    setEditingExpense(expense);
+    setForm({
+      description: expense.description,
+      amount: String(expense.amount),
+      category: expense.category,
+      date: expense.date.slice(0, 10),
+      recurring: expense.recurring,
+    });
+    setExpenseOpen(true);
+  };
+
+  const handleUpdateExpense = async () => {
+    if (!editingExpense) return;
+    const errors = validateExpenseForm(form, t);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+    setSubmitting(true);
+    try {
+      await apiFetch(`/api/expenses/${editingExpense.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          description: form.description,
+          amount: parseFloat(form.amount),
+          category: form.category,
+          date: form.date,
+          recurring: form.recurring,
+          currency: 'BRL',
+        }),
+      });
+      toast.success(t('common.save'));
+      setExpenseOpen(false);
+      setEditingExpense(null);
+      setForm({ description: '', amount: '', category: 'other', date: todayStr(), recurring: false });
+      fetchData();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    if (!window.confirm(t('proDashboard.finances.deleteConfirm'))) return;
+    try {
+      await apiFetch(`/api/expenses/${id}`, { method: 'DELETE' });
+      toast.success(t('common.delete'));
+      fetchData();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     }
   };
 
@@ -258,6 +312,7 @@ export default function FinancesPage() {
                   <TableHead>{t('proDashboard.finances.expenseCategory')}</TableHead>
                   <TableHead>{t('proDashboard.finances.amount')}</TableHead>
                   <TableHead>{t('proDashboard.finances.recurring')}</TableHead>
+                  <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -268,6 +323,16 @@ export default function FinancesPage() {
                     <TableCell><Badge variant="secondary">{e.category}</Badge></TableCell>
                     <TableCell>R$ {Number(e.amount).toFixed(2)}</TableCell>
                     <TableCell>{e.recurring ? t('common.yes') : t('common.no')}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditExpense(e)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteExpense(e.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -277,9 +342,9 @@ export default function FinancesPage() {
       </Card>
 
       {/* New Expense Dialog */}
-      <Dialog open={expenseOpen} onOpenChange={setExpenseOpen}>
+      <Dialog open={expenseOpen} onOpenChange={(open) => { setExpenseOpen(open); if (!open) { setEditingExpense(null); setForm({ description: '', amount: '', category: 'other', date: todayStr(), recurring: false }); setFieldErrors({}); } }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{t('proDashboard.finances.newExpense')}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingExpense ? t('common.edit') : t('proDashboard.finances.newExpense')}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>{t('proDashboard.portfolio.description')} *</Label>
@@ -320,7 +385,7 @@ export default function FinancesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setExpenseOpen(false)}>{t('common.cancel')}</Button>
-            <Button onClick={handleCreateExpense} disabled={submitting}>
+            <Button onClick={editingExpense ? handleUpdateExpense : handleCreateExpense} disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t('common.save')}
             </Button>

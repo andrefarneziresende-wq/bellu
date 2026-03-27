@@ -6,18 +6,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors, spacing, radii } from '../../theme/colors';
 import { useAuthStore } from '../../stores/authStore';
-import { Badge } from '../../components/ui/Badge';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
-const menuItems: { icon: IoniconsName; labelKey: string }[] = [
-  { icon: 'storefront-outline', labelKey: 'pro.services.title' },
-  { icon: 'time-outline', labelKey: 'professional.workingHours' },
-  { icon: 'star-outline', labelKey: 'professional.reviews' },
-  { icon: 'settings-outline', labelKey: 'profile.settings' },
-  { icon: 'language-outline', labelKey: 'profile.language' },
-  { icon: 'help-circle-outline', labelKey: 'profile.helpSupport' },
-  { icon: 'document-text-outline', labelKey: 'profile.termsOfUse' },
+const menuItems: { icon: IoniconsName; labelKey: string; route: string }[] = [
+  { icon: 'storefront-outline', labelKey: 'pro.services.title', route: '/services' },
+  { icon: 'time-outline', labelKey: 'professional.workingHours', route: '/working-hours' },
+  { icon: 'star-outline', labelKey: 'professional.reviews', route: '/reviews' },
+  { icon: 'settings-outline', labelKey: 'profile.settings', route: '/settings' },
+  { icon: 'language-outline', labelKey: 'profile.language', route: '/language' },
+  { icon: 'help-circle-outline', labelKey: 'profile.helpSupport', route: '/help' },
+  { icon: 'document-text-outline', labelKey: 'profile.termsOfUse', route: '/legal' },
 ];
 
 export default function ProfileScreen() {
@@ -65,7 +64,7 @@ export default function ProfileScreen() {
             <Text style={styles.rating}>{professional?.rating?.toFixed(1) || '0.0'}</Text>
             <Text style={styles.reviews}>({professional?.reviewCount || 0} {t('professional.reviews').toLowerCase()})</Text>
           </View>
-          <Pressable style={styles.editBtn}>
+          <Pressable style={styles.editBtn} onPress={() => router.push('/edit-profile' as any)}>
             <Text style={styles.editBtnText}>{t('profile.editProfile')}</Text>
           </Pressable>
         </Animated.View>
@@ -73,7 +72,7 @@ export default function ProfileScreen() {
         {/* Menu */}
         <Animated.View entering={FadeInDown.delay(200)} style={styles.menu}>
           {menuItems.map((item) => (
-            <Pressable key={item.labelKey} style={styles.menuItem}>
+            <Pressable key={item.labelKey} style={styles.menuItem} onPress={() => router.push(item.route as any)}>
               <Ionicons name={item.icon} size={22} color={colors.text} />
               <Text style={styles.menuLabel}>{t(item.labelKey)}</Text>
               <Ionicons name="chevron-forward" size={18} color={colors.border} />

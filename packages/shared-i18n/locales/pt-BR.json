@@ -127,7 +127,9 @@
     "confirmPackage": "Confirmar pacote",
     "cancelConfirmation": "Tem certeza que deseja cancelar?",
     "reschedule": "Reagendar",
-    "professional": "Profissional"
+    "professional": "Profissional",
+    "cancelError": "Não foi possível cancelar",
+    "loadError": "Não foi possível carregar agendamentos"
   },
   "payment": {
     "title": "Pagamento",
@@ -200,10 +202,18 @@
     "phonePlaceholder": "(11) 99999-9999",
     "save": "Salvar alterações",
     "saved": "Perfil atualizado com sucesso!",
-    "nameRequired": "O nome é obrigatório"
+    "nameRequired": "O nome é obrigatório",
+    "photoTitle": "Foto de perfil",
+    "photoChoose": "Escolha uma opção",
+    "takePhoto": "Tirar foto",
+    "chooseFromGallery": "Escolher da galeria",
+    "permissionRequired": "Permissão necessária",
+    "cameraPermission": "Precisamos de acesso à câmera.",
+    "galleryPermission": "Precisamos de acesso à galeria."
   },
   "help": {
     "faq": "Perguntas frequentes",
+    "faqMessage": "Consulte nossa central de ajuda para dúvidas frequentes.",
     "contactEmail": "Contato por e-mail",
     "contactWhatsapp": "Contato por WhatsApp"
   },
@@ -254,7 +264,13 @@
     "placeholder": "Digite sua mensagem...",
     "send": "Enviar",
     "noMessages": "Nenhuma mensagem ainda",
-    "typing": "digitando..."
+    "typing": "digitando...",
+    "conversations": "Conversas",
+    "noConversations": "Sem conversas ainda",
+    "noConversationsMessage": "Visite a página de um profissional e inicie uma conversa.",
+    "loadError": "Erro ao carregar conversas",
+    "sendError": "Não foi possível enviar a mensagem",
+    "startConversation": "Envie uma mensagem para iniciar a conversa"
   },
   "notifications": {
     "newBooking": "Novo agendamento",
@@ -386,7 +402,8 @@
     "invalidSlug": "Slug deve conter apenas letras minúsculas, números e hífens",
     "rangeValue": "Valor deve ser entre {{min}} e {{max}}",
     "emailAlreadyRegistered": "Este email já está cadastrado",
-    "phoneAlreadyRegistered": "Este telefone já está cadastrado"
+    "phoneAlreadyRegistered": "Este telefone já está cadastrado",
+    "optional": "opcional"
   },
   "proDashboard": {
     "header": {
@@ -476,7 +493,9 @@
       "inactive": "Inativo",
       "noServices": "Nenhum serviço cadastrado",
       "confirmDelete": "Tem certeza que deseja excluir o serviço",
-      "deleteService": "Excluir Serviço"
+      "deleteService": "Excluir Serviço",
+      "selectFromCatalog": "Selecione do catálogo",
+      "subtitle": "Selecione serviços do catálogo e configure preço e duração"
     },
     "packages": {
       "title": "Pacotes de Sessões",
@@ -511,7 +530,9 @@
       "statusActive": "Ativo",
       "statusCompleted": "Concluído",
       "statusExpired": "Expirado",
-      "statusCancelled": "Cancelado"
+      "statusCancelled": "Cancelado",
+      "namePlaceholder": "Ex: Pacote Hidratação 5 sessões",
+      "intervalDays": "dias"
     },
     "portfolio": {
       "title": "Portfólio",
@@ -538,7 +559,8 @@
       "catProduct": "Produto",
       "catEquipment": "Equipamento",
       "catOther": "Outro",
-      "expensePlaceholder": "Ex: Aluguel do salão"
+      "expensePlaceholder": "Ex: Aluguel do salão",
+      "deleteConfirm": "Tem certeza que deseja excluir esta despesa?"
     },
     "team": {
       "title": "Equipe",
@@ -570,7 +592,8 @@
       "loginPassword": "Senha temporária",
       "loginDialogTitle": "Criar acesso para funcionário",
       "loginDialogDescription": "Crie um login para {{name}} acessar o painel profissional.",
-      "hasLogin": "Possui acesso"
+      "hasLogin": "Possui acesso",
+      "commissionPlaceholder": "Ex: 40"
     },
     "roles": {
       "title": "Cargos e Permissões",
@@ -644,7 +667,8 @@
       "sendResponse": "Enviar resposta",
       "responsePlaceholder": "Escreva sua resposta...",
       "noReviews": "Nenhuma avaliação ainda",
-      "distribution": "Distribuição"
+      "distribution": "Distribuição",
+      "deleteConfirm": "Tem certeza que deseja excluir esta avaliação?"
     },
     "promotions": {
       "title": "Promoções",
@@ -1111,5 +1135,23 @@
     "privacy": {
       "title": "Política de Privacidade"
     }
+  },
+  "onboarding": {
+    "slide1Title": "Descubra profissionais incríveis perto de você",
+    "slide1Subtitle": "Explore salões, clínicas e profissionais autônomos de beleza na sua região.",
+    "slide2Title": "Veja portfólios reais e avaliações verificadas",
+    "slide2Subtitle": "Confira fotos de antes e depois e avaliações de clientes reais.",
+    "slide3Title": "Agende em segundos — sem ligação, sem espera",
+    "slide3Subtitle": "Escolha o horário perfeito e confirme seu agendamento em poucos toques.",
+    "skip": "Pular",
+    "next": "Próximo",
+    "getStarted": "Começar"
+  },
+  "time": {
+    "now": "agora",
+    "min": "min",
+    "hour": "h",
+    "day": "d",
+    "yesterday": "Ontem"
   }
 }

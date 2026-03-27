@@ -32,7 +32,7 @@ import { wsManager } from '../../services/websocket';
 export default function ChatScreen() {
   const { id: conversationId } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const [messages, setMessages] = useState<ConversationMessageData[]>([]);
   const [inputText, setInputText] = useState('');
@@ -133,7 +133,7 @@ export default function ChatScreen() {
       setMessages((prev) => [...prev, res.data]);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     } catch {
-      Alert.alert('Erro', 'Nao foi possivel enviar a mensagem');
+      Alert.alert(t('common.error'), t('chat.sendError'));
       setInputText(text);
     } finally {
       setSending(false);
@@ -163,13 +163,13 @@ export default function ChatScreen() {
 
   const handleImageOptions = () => {
     if (!conversationId) return;
-    Alert.alert('Enviar foto', 'Escolha uma opcao', [
+    Alert.alert(t('editProfile.photoTitle'), t('editProfile.photoChoose'), [
       {
-        text: 'Tirar foto',
+        text: t('editProfile.takePhoto'),
         onPress: async () => {
           const permission = await ImagePicker.requestCameraPermissionsAsync();
           if (!permission.granted) {
-            Alert.alert('Permissao necessaria', 'Precisamos de acesso a camera.');
+            Alert.alert(t('editProfile.permissionRequired'), t('editProfile.cameraPermission'));
             return;
           }
           const result = await ImagePicker.launchCameraAsync({
@@ -182,11 +182,11 @@ export default function ChatScreen() {
         },
       },
       {
-        text: 'Escolher da galeria',
+        text: t('editProfile.chooseFromGallery'),
         onPress: async () => {
           const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (!permission.granted) {
-            Alert.alert('Permissao necessaria', 'Precisamos de acesso a galeria.');
+            Alert.alert(t('editProfile.permissionRequired'), t('editProfile.galleryPermission'));
             return;
           }
           const result = await ImagePicker.launchImageLibraryAsync({
@@ -198,7 +198,7 @@ export default function ChatScreen() {
           }
         },
       },
-      { text: 'Cancelar', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
@@ -240,8 +240,8 @@ export default function ChatScreen() {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Ionicons name="chatbubble-outline" size={48} color={colors.border} />
-              <Text style={styles.emptyText}>Nenhuma mensagem ainda</Text>
-              <Text style={styles.emptySubtext}>Envie uma mensagem para iniciar a conversa</Text>
+              <Text style={styles.emptyText}>{t('chat.noMessages')}</Text>
+              <Text style={styles.emptySubtext}>{t('chat.startConversation')}</Text>
             </View>
           }
           renderItem={({ item }) => {
@@ -268,7 +268,7 @@ export default function ChatScreen() {
                 )}
                 <View style={styles.messageFooter}>
                   <Text style={[styles.messageTime, mine && styles.myMessageTime]}>
-                    {new Date(item.createdAt).toLocaleTimeString('pt-BR', {
+                    {new Date(item.createdAt).toLocaleTimeString(i18n.language, {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
@@ -315,7 +315,7 @@ export default function ChatScreen() {
                 wsManager.send({ type: 'typing', conversationId });
               }
             }}
-            placeholder="Digite sua mensagem..."
+            placeholder={t('chat.placeholder')}
             placeholderTextColor={colors.textTertiary}
             multiline
             maxLength={2000}

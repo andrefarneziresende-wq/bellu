@@ -201,7 +201,7 @@ export default function ServicesPage() {
         <div>
           <h1 className="font-serif text-2xl font-bold">{t('proDashboard.services.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Selecione serviços do catálogo e configure preço e duração
+            {t('proDashboard.services.subtitle')}
           </p>
         </div>
         <Button onClick={openCreate} disabled={availableTemplates.length === 0}>
@@ -274,13 +274,13 @@ export default function ServicesPage() {
           <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} noValidate className="space-y-4 py-4">
             {!editingId ? (
               <div className="space-y-2">
-                <Label>Serviço *</Label>
+                <Label>{t('proDashboard.services.name')} *</Label>
                 <Select
                   value={form.serviceTemplateId}
                   onValueChange={(v) => { setForm(p => ({ ...p, serviceTemplateId: v })); clearFieldError('serviceTemplateId'); }}
                 >
                   <SelectTrigger className={fieldErrors.serviceTemplateId ? 'border-brand-error' : ''}>
-                    <SelectValue placeholder="Selecione do catálogo" />
+                    <SelectValue placeholder={t('proDashboard.services.selectFromCatalog')} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableTemplates.map(tmpl => (
@@ -293,7 +293,7 @@ export default function ServicesPage() {
                 {fieldErrors.serviceTemplateId && <p className="text-xs text-brand-error">{fieldErrors.serviceTemplateId}</p>}
                 {selectedTemplate && (
                   <p className="text-xs text-muted-foreground">
-                    Categoria: {getCatName(selectedTemplate.category)}
+                    {t('proDashboard.services.category')}: {getCatName(selectedTemplate.category)}
                   </p>
                 )}
               </div>

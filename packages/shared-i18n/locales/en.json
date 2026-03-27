@@ -127,7 +127,9 @@
     "confirmPackage": "Confirm package",
     "cancelConfirmation": "Are you sure you want to cancel?",
     "reschedule": "Reschedule",
-    "professional": "Professional"
+    "professional": "Professional",
+    "cancelError": "Could not cancel booking",
+    "loadError": "Could not load bookings"
   },
   "payment": {
     "title": "Payment",
@@ -200,10 +202,18 @@
     "phonePlaceholder": "+1 (555) 000-0000",
     "save": "Save changes",
     "saved": "Profile updated successfully!",
-    "nameRequired": "Name is required"
+    "nameRequired": "Name is required",
+    "photoTitle": "Profile photo",
+    "photoChoose": "Choose an option",
+    "takePhoto": "Take photo",
+    "chooseFromGallery": "Choose from gallery",
+    "permissionRequired": "Permission required",
+    "cameraPermission": "We need access to your camera.",
+    "galleryPermission": "We need access to your gallery."
   },
   "help": {
     "faq": "Frequently asked questions",
+    "faqMessage": "Check our help center for frequently asked questions.",
     "contactEmail": "Contact by email",
     "contactWhatsapp": "Contact by WhatsApp"
   },
@@ -254,7 +264,13 @@
     "placeholder": "Type your message...",
     "send": "Send",
     "noMessages": "No messages yet",
-    "typing": "typing..."
+    "typing": "typing...",
+    "conversations": "Conversations",
+    "noConversations": "No conversations yet",
+    "noConversationsMessage": "Visit a professional's page and start a conversation.",
+    "loadError": "Error loading conversations",
+    "sendError": "Could not send the message",
+    "startConversation": "Send a message to start the conversation"
   },
   "notifications": {
     "newBooking": "New booking",
@@ -386,7 +402,8 @@
     "invalidSlug": "Slug must contain only lowercase letters, numbers and hyphens",
     "rangeValue": "Value must be between {{min}} and {{max}}",
     "emailAlreadyRegistered": "This email is already registered",
-    "phoneAlreadyRegistered": "This phone number is already registered"
+    "phoneAlreadyRegistered": "This phone number is already registered",
+    "optional": "optional"
   },
   "proDashboard": {
     "header": {
@@ -476,7 +493,9 @@
       "inactive": "Inactive",
       "noServices": "No services registered",
       "confirmDelete": "Are you sure you want to delete the service",
-      "deleteService": "Delete Service"
+      "deleteService": "Delete Service",
+      "selectFromCatalog": "Select from catalog",
+      "subtitle": "Select services from the catalog and set price and duration"
     },
     "packages": {
       "title": "Session Packages",
@@ -511,7 +530,9 @@
       "statusActive": "Active",
       "statusCompleted": "Completed",
       "statusExpired": "Expired",
-      "statusCancelled": "Cancelled"
+      "statusCancelled": "Cancelled",
+      "namePlaceholder": "E.g.: Hydration Package 5 sessions",
+      "intervalDays": "days"
     },
     "portfolio": {
       "title": "Portfolio",
@@ -538,7 +559,8 @@
       "catProduct": "Product",
       "catEquipment": "Equipment",
       "catOther": "Other",
-      "expensePlaceholder": "E.g.: Salon rent"
+      "expensePlaceholder": "E.g.: Salon rent",
+      "deleteConfirm": "Are you sure you want to delete this expense?"
     },
     "team": {
       "title": "Team",
@@ -570,7 +592,8 @@
       "loginPassword": "Temporary password",
       "loginDialogTitle": "Create staff login",
       "loginDialogDescription": "Create a login for {{name}} to access the professional dashboard.",
-      "hasLogin": "Has login"
+      "hasLogin": "Has login",
+      "commissionPlaceholder": "E.g.: 40"
     },
     "roles": {
       "title": "Roles & Permissions",
@@ -644,7 +667,8 @@
       "sendResponse": "Send response",
       "responsePlaceholder": "Write your response...",
       "noReviews": "No reviews yet",
-      "distribution": "Distribution"
+      "distribution": "Distribution",
+      "deleteConfirm": "Are you sure you want to delete this review?"
     },
     "promotions": {
       "title": "Promotions",
@@ -1111,5 +1135,23 @@
     "privacy": {
       "title": "Privacy Policy"
     }
+  },
+  "onboarding": {
+    "slide1Title": "Discover amazing professionals near you",
+    "slide1Subtitle": "Explore salons, clinics and freelance beauty professionals in your area.",
+    "slide2Title": "See real portfolios and verified reviews",
+    "slide2Subtitle": "Check before and after photos and reviews from real clients.",
+    "slide3Title": "Book in seconds — no calls, no waiting",
+    "slide3Subtitle": "Choose the perfect time and confirm your booking in a few taps.",
+    "skip": "Skip",
+    "next": "Next",
+    "getStarted": "Get Started"
+  },
+  "time": {
+    "now": "now",
+    "min": "min",
+    "hour": "h",
+    "day": "d",
+    "yesterday": "Yesterday"
   }
 }

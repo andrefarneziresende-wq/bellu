@@ -3,6 +3,7 @@ import { authenticate } from '../../shared/auth-middleware.js';
 import {
   listHandler,
   listActiveHandler,
+  getByIdHandler,
   createHandler,
   updateHandler,
   deleteHandler,
@@ -11,6 +12,7 @@ import {
 export async function promotionRoutes(app: FastifyInstance) {
   app.get<{ Querystring: { professionalId?: string } }>('/', { preHandler: [authenticate] }, listHandler);
   app.get<{ Querystring: { professionalId?: string } }>('/active', listActiveHandler);
+  app.get<{ Params: { id: string } }>('/:id', { preHandler: [authenticate] }, getByIdHandler);
 
   app.post('/', { preHandler: [authenticate] }, createHandler);
   app.patch<{ Params: { id: string } }>('/:id', { preHandler: [authenticate] }, updateHandler);

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Trash2, Loader2, Camera, AlertCircle, Upload, X } from 'lucide-react';
+import { Plus, Trash2, Loader2, Camera, AlertCircle, Upload, X, Pencil } from 'lucide-react';
 import { apiFetch, apiUpload } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useTranslation } from '@/lib/i18n';
@@ -39,6 +39,9 @@ export default function PortfolioPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
+  const [editForm, setEditForm] = useState({ description: '' });
   const [submitting, setSubmitting] = useState(false);
   const [professionalId, setProfessionalId] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<PortfolioFieldErrors>({});
@@ -165,6 +168,31 @@ export default function PortfolioPage() {
     }
   };
 
+  const openEdit = (item: PortfolioItem) => {
+    setEditingItem(item);
+    setEditForm({ description: item.description || '' });
+    setEditOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editingItem) return;
+    setSubmitting(true);
+    try {
+      await apiFetch(`/api/portfolio/${editingItem.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ description: editForm.description }),
+      });
+      toast.success(t('common.save'));
+      setEditOpen(false);
+      setEditingItem(null);
+      fetchItems();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const confirmDelete = (id: string) => {
     setDeletingId(id);
     setDeleteOpen(true);
@@ -237,9 +265,14 @@ export default function PortfolioPage() {
                     {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
                     <p className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleDateString(locale)}</p>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => confirmDelete(item.id)}>
-                    <Trash2 className="h-4 w-4 text-brand-error" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(item)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => confirmDelete(item.id)}>
+                      <Trash2 className="h-4 w-4 text-brand-error" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -257,7 +290,7 @@ export default function PortfolioPage() {
                 <Label>{t('proDashboard.portfolio.beforePhoto')}</Label>
                 {beforePreview ? (
                   <div className="relative aspect-[4/5] overflow-hidden rounded-lg border">
-                    <img src={beforePreview} alt="Antes" className="h-full w-full object-cover" />
+                    <img src={beforePreview} alt={t('proDashboard.portfolio.beforePhoto')} className="h-full w-full object-cover" />
                     <button type="button" onClick={() => clearFile('before')} className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80">
                       <X className="h-3.5 w-3.5" />
                     </button>
@@ -265,8 +298,8 @@ export default function PortfolioPage() {
                 ) : (
                   <label className={`flex aspect-[4/5] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-colors hover:border-primary hover:bg-primary/5 ${fieldErrors.beforePhoto ? 'border-brand-error' : 'border-muted-foreground/30'}`}>
                     <Upload className="h-6 w-6 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Foto antes</span>
-                    <span className="text-[10px] text-muted-foreground/60">(opcional)</span>
+                    <span className="text-xs text-muted-foreground">{t('proDashboard.portfolio.beforePhoto')}</span>
+                    <span className="text-[10px] text-muted-foreground/60">({t('validation.optional')})</span>
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect('before', e.target.files?.[0] || null)} />
                   </label>
                 )}
@@ -277,7 +310,7 @@ export default function PortfolioPage() {
                 <Label>{t('proDashboard.portfolio.afterPhoto')} *</Label>
                 {afterPreview ? (
                   <div className="relative aspect-[4/5] overflow-hidden rounded-lg border">
-                    <img src={afterPreview} alt="Depois" className="h-full w-full object-cover" />
+                    <img src={afterPreview} alt={t('proDashboard.portfolio.afterPhoto')} className="h-full w-full object-cover" />
                     <button type="button" onClick={() => clearFile('after')} className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80">
                       <X className="h-3.5 w-3.5" />
                     </button>
@@ -285,8 +318,8 @@ export default function PortfolioPage() {
                 ) : (
                   <label className={`flex aspect-[4/5] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-colors hover:border-primary hover:bg-primary/5 ${fieldErrors.afterPhoto ? 'border-brand-error' : 'border-muted-foreground/30'}`}>
                     <Upload className="h-6 w-6 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Foto depois</span>
-                    <span className="text-[10px] text-muted-foreground/60">(obrigatoria)</span>
+                    <span className="text-xs text-muted-foreground">{t('proDashboard.portfolio.afterPhoto')}</span>
+                    <span className="text-[10px] text-muted-foreground/60">({t('validation.required')})</span>
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect('after', e.target.files?.[0] || null)} />
                   </label>
                 )}
@@ -333,6 +366,30 @@ export default function PortfolioPage() {
             <Button variant="destructive" onClick={handleDelete} disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t('common.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Description Dialog */}
+      <Dialog open={editOpen} onOpenChange={(open) => { setEditOpen(open); if (!open) setEditingItem(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{t('common.edit')}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{t('proDashboard.portfolio.description')}</Label>
+              <Textarea
+                value={editForm.description}
+                onChange={(e) => setEditForm({ description: e.target.value })}
+                placeholder={t('proDashboard.portfolio.description')}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleEdit} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t('common.save')}
             </Button>
           </DialogFooter>
         </DialogContent>

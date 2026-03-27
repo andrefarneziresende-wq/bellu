@@ -118,7 +118,7 @@ export default function FinancesScreen() {
             <Text style={styles.balanceValue}>
               R$ {balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </Text>
-            <Button label={t('pro.finances.withdraw')} onPress={() => {}} />
+            <Button label={t('pro.finances.withdraw')} onPress={() => Alert.alert(t('pro.finances.withdrawComingSoon', 'Funcionalidade de saque em breve!'))} />
           </Card>
         </Animated.View>
 

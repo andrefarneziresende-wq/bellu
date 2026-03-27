@@ -35,6 +35,7 @@ export default function BookingsScreen() {
       setBookings(list);
     } catch (error: any) {
       setBookings([]);
+      Alert.alert(t('common.error', 'Erro'), t('booking.loadError', 'Não foi possível carregar agendamentos'));
     } finally {
       setLoading(false);
     }
@@ -191,7 +192,7 @@ export default function BookingsScreen() {
                                     await bookingsApi.cancel(item.id);
                                     fetchBookings();
                                   } catch (err: any) {
-                                    Alert.alert('Erro', err.message || 'Nao foi possivel cancelar');
+                                    Alert.alert(t('common.error', 'Erro'), err.message || t('booking.cancelError', 'Não foi possível cancelar'));
                                   }
                                 },
                               },

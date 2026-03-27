@@ -46,26 +46,26 @@ export default function EditProfileScreen() {
   };
 
   const handlePickAvatar = () => {
-    Alert.alert('Foto de perfil', 'Escolha uma opcao', [
+    Alert.alert(t('editProfile.photoTitle', 'Foto de perfil'), t('editProfile.photoChoose', 'Escolha uma opção'), [
       {
-        text: 'Tirar foto',
+        text: t('editProfile.takePhoto', 'Tirar foto'),
         onPress: async () => {
           const perm = await ImagePicker.requestCameraPermissionsAsync();
-          if (!perm.granted) { Alert.alert('Permissao necessaria', 'Precisamos de acesso a camera.'); return; }
+          if (!perm.granted) { Alert.alert(t('editProfile.permissionRequired', 'Permissão necessária'), t('editProfile.cameraPermission', 'Precisamos de acesso à câmera.')); return; }
           const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
           if (!result.canceled && result.assets[0]) pickAndUpload(result.assets[0].uri);
         },
       },
       {
-        text: 'Escolher da galeria',
+        text: t('editProfile.chooseFromGallery', 'Escolher da galeria'),
         onPress: async () => {
           const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (!perm.granted) { Alert.alert('Permissao necessaria', 'Precisamos de acesso a galeria.'); return; }
+          if (!perm.granted) { Alert.alert(t('editProfile.permissionRequired', 'Permissão necessária'), t('editProfile.galleryPermission', 'Precisamos de acesso à galeria.')); return; }
           const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
           if (!result.canceled && result.assets[0]) pickAndUpload(result.assets[0].uri);
         },
       },
-      { text: 'Cancelar', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 

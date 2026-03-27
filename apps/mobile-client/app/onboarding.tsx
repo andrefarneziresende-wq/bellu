@@ -9,6 +9,7 @@ import {
   type ViewToken,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,32 +18,33 @@ import { Button } from '../components/ui/Button';
 
 const { width } = Dimensions.get('window');
 
-const slides = [
-  {
-    id: '1',
-    icon: 'search-outline' as const,
-    title: 'Descubra profissionais incríveis perto de você',
-    subtitle: 'Explore salões, clínicas e profissionais autônomos de beleza na sua região.',
-    color: colors.primary,
-  },
-  {
-    id: '2',
-    icon: 'star-outline' as const,
-    title: 'Veja portfólios reais e avaliações verificadas',
-    subtitle: 'Confira fotos de antes e depois e avaliações de clientes reais.',
-    color: colors.accent,
-  },
-  {
-    id: '3',
-    icon: 'calendar-outline' as const,
-    title: 'Agende em segundos — sem ligação, sem espera',
-    subtitle: 'Escolha o horário perfeito e confirme seu agendamento em poucos toques.',
-    color: colors.success,
-  },
-];
-
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+
+  const slides = [
+    {
+      id: '1',
+      icon: 'search-outline' as const,
+      title: t('onboarding.slide1Title', 'Descubra profissionais incríveis perto de você'),
+      subtitle: t('onboarding.slide1Subtitle', 'Explore salões, clínicas e profissionais autônomos de beleza na sua região.'),
+      color: colors.primary,
+    },
+    {
+      id: '2',
+      icon: 'star-outline' as const,
+      title: t('onboarding.slide2Title', 'Veja portfólios reais e avaliações verificadas'),
+      subtitle: t('onboarding.slide2Subtitle', 'Confira fotos de antes e depois e avaliações de clientes reais.'),
+      color: colors.accent,
+    },
+    {
+      id: '3',
+      icon: 'calendar-outline' as const,
+      title: t('onboarding.slide3Title', 'Agende em segundos — sem ligação, sem espera'),
+      subtitle: t('onboarding.slide3Subtitle', 'Escolha o horário perfeito e confirme seu agendamento em poucos toques.'),
+      color: colors.success,
+    },
+  ];
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
@@ -72,7 +74,7 @@ export default function OnboardingScreen() {
     <SafeAreaView style={styles.container}>
       {/* Skip button */}
       <Pressable onPress={handleSkip} style={styles.skipButton}>
-        <Text style={styles.skipText}>Pular</Text>
+        <Text style={styles.skipText}>{t('onboarding.skip', 'Pular')}</Text>
       </Pressable>
 
       <FlatList
@@ -115,7 +117,7 @@ export default function OnboardingScreen() {
       {/* Button */}
       <View style={styles.buttonContainer}>
         <Button
-          title={currentIndex === slides.length - 1 ? 'Começar' : 'Próximo'}
+          title={currentIndex === slides.length - 1 ? t('onboarding.getStarted', 'Começar') : t('onboarding.next', 'Próximo')}
           onPress={handleNext}
           size="lg"
           fullWidth

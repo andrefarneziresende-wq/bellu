@@ -20,23 +20,26 @@ const TYPE_ICONS: Record<string, { name: keyof typeof Ionicons.glyphMap; color: 
   chat_message: { name: 'chatbubble-ellipses', color: '#06B6D4' },
 };
 
-function timeAgo(dateStr: string): string {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60_000);
-  if (diffMin < 1) return 'agora';
-  if (diffMin < 60) return `${diffMin}min`;
-  const diffH = Math.floor(diffMin / 60);
-  if (diffH < 24) return `${diffH}h`;
-  const diffD = Math.floor(diffH / 24);
-  if (diffD < 7) return `${diffD}d`;
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-}
+// timeAgo is defined inside the component to access i18n
 
 export default function NotificationsScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  const timeAgo = (dateStr: string): string => {
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMin = Math.floor(diffMs / 60_000);
+    if (diffMin < 1) return t('time.now', 'agora');
+    if (diffMin < 60) return `${diffMin}${t('time.min', 'min')}`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `${diffH}${t('time.hour', 'h')}`;
+    const diffD = Math.floor(diffH / 24);
+    if (diffD < 7) return `${diffD}${t('time.day', 'd')}`;
+    return date.toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' });
+  };
+
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

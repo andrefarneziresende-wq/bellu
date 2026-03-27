@@ -26,7 +26,7 @@ export default function FavoritesScreen() {
       const list = Array.isArray(res.data) ? res.data : (res.data as any)?.favorites ?? [];
       setFavorites(list);
     } catch (error: any) {
-      // Silently handle
+      toast(t('common.error', 'Erro ao carregar favoritos'), 'error');
     } finally {
       setLoading(false);
     }

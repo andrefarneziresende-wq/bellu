@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '../../shared/auth-middleware.js';
+import { requireAdmin } from '../../shared/admin-middleware.js';
 import {
   listHandler,
   getByIdHandler,
@@ -11,7 +12,7 @@ import {
 export async function categoryRoutes(app: FastifyInstance) {
   app.get<{ Querystring: { locale?: string } }>('/', listHandler);
   app.get<{ Params: { id: string } }>('/:id', getByIdHandler);
-  app.post('/', { preHandler: [authenticate] }, createHandler);
-  app.patch<{ Params: { id: string } }>('/:id', { preHandler: [authenticate] }, updateHandler);
-  app.delete<{ Params: { id: string } }>('/:id', { preHandler: [authenticate] }, deleteHandler);
+  app.post('/', { preHandler: [authenticate, requireAdmin] }, createHandler);
+  app.patch<{ Params: { id: string } }>('/:id', { preHandler: [authenticate, requireAdmin] }, updateHandler);
+  app.delete<{ Params: { id: string } }>('/:id', { preHandler: [authenticate, requireAdmin] }, deleteHandler);
 }

@@ -30,6 +30,24 @@ export async function listHandler(
   return reply.status(200).send({ success: true, data: expenses });
 }
 
+export async function getByIdHandler(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  const { id } = request.params;
+
+  const professional = await prisma.professional.findUnique({
+    where: { userId: request.user.userId },
+  });
+  if (!professional) throw new NotFoundError('Professional profile');
+
+  const expense = await prisma.expense.findFirst({
+    where: { id, professionalId: professional.id },
+  });
+  if (!expense) throw new NotFoundError('Expense');
+  return reply.status(200).send({ success: true, data: expense });
+}
+
 export async function summaryHandler(
   request: FastifyRequest<{
     Querystring: { professionalId: string; startDate: string; endDate: string };

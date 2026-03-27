@@ -26,7 +26,7 @@ export function Hero() {
               {t('website.home.heroSubtitle')}
             </p>
             <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row lg:justify-start">
-              <Button size="lg">{t('website.nav.downloadApp')}</Button>
+              <a href="#download"><Button size="lg">{t('website.nav.downloadApp')}</Button></a>
               <Link href="/para-profissionais">
                 <Button variant="outline" size="lg">
                   {t('website.home.imProfessional')}

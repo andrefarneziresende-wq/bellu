@@ -23,6 +23,19 @@ export async function listHandler(
   return reply.status(200).send({ success: true, data: promotions });
 }
 
+export async function getByIdHandler(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  const { id } = request.params;
+  const promotion = await prisma.promotion.findUnique({
+    where: { id },
+    include: { services: { include: { service: true } } },
+  });
+  if (!promotion) throw new NotFoundError('Promotion');
+  return reply.status(200).send({ success: true, data: promotion });
+}
+
 export async function listActiveHandler(
   request: FastifyRequest<{ Querystring: { professionalId?: string } }>,
   reply: FastifyReply,

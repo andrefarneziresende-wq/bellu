@@ -13,12 +13,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Image } from 'expo-image';
+import { useTranslation } from 'react-i18next';
 import { colors, spacing, radii, typography } from '../../theme/colors';
 import { conversationsApi, type ConversationData } from '../../services/api';
 import { wsManager } from '../../services/websocket';
+import { toast } from '../../components/ui/Toast';
 
 export default function ChatListScreen() {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
   const [conversations, setConversations] = useState<ConversationData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,6 +31,7 @@ export default function ChatListScreen() {
       setConversations(res.data || []);
     } catch {
       setConversations([]);
+      toast(t('chat.loadError', 'Erro ao carregar conversas'), 'error');
     } finally {
       setLoading(false);
     }
@@ -60,13 +64,13 @@ export default function ChatListScreen() {
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) {
-      return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' });
     } else if (diffDays === 1) {
-      return 'Ontem';
+      return t('time.yesterday', 'Ontem');
     } else if (diffDays < 7) {
-      return date.toLocaleDateString('pt-BR', { weekday: 'short' });
+      return date.toLocaleDateString(i18n.language, { weekday: 'short' });
     }
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    return date.toLocaleDateString(i18n.language, { day: '2-digit', month: '2-digit' });
   };
 
   if (loading) {
@@ -85,16 +89,16 @@ export default function ChatListScreen() {
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Conversas</Text>
+        <Text style={styles.headerTitle}>{t('chat.conversations', 'Conversas')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       {conversations.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="chatbubbles-outline" size={64} color={colors.border} />
-          <Text style={styles.emptyTitle}>Sem conversas ainda</Text>
+          <Text style={styles.emptyTitle}>{t('chat.noConversations', 'Sem conversas ainda')}</Text>
           <Text style={styles.emptyText}>
-            Visite a pagina de um profissional e inicie uma conversa.
+            {t('chat.noConversationsMessage', 'Visite a página de um profissional e inicie uma conversa.')}
           </Text>
         </View>
       ) : (
@@ -130,7 +134,7 @@ export default function ChatListScreen() {
                   </View>
                   <View style={styles.chatPreview}>
                     <Text style={styles.chatMessage} numberOfLines={1}>
-                      {item.lastMessage || 'Nenhuma mensagem ainda'}
+                      {item.lastMessage || t('chat.noMessages')}
                     </Text>
                     {item.unreadCount > 0 && (
                       <View style={styles.unreadBadge}>

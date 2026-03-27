@@ -1,13 +1,36 @@
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Switch } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, spacing, radii, typography } from '../theme/colors';
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [locationEnabled, setLocationEnabled] = useState(true);
+
+  useEffect(() => {
+    AsyncStorage.getItem('settings_notifications').then((v) => {
+      if (v !== null) setNotificationsEnabled(v === 'true');
+    });
+    AsyncStorage.getItem('settings_location').then((v) => {
+      if (v !== null) setLocationEnabled(v === 'true');
+    });
+  }, []);
+
+  const toggleNotifications = (val: boolean) => {
+    setNotificationsEnabled(val);
+    AsyncStorage.setItem('settings_notifications', String(val));
+  };
+
+  const toggleLocation = (val: boolean) => {
+    setLocationEnabled(val);
+    AsyncStorage.setItem('settings_location', String(val));
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -26,7 +49,8 @@ export default function SettingsScreen() {
           <Switch
             trackColor={{ false: colors.border, true: colors.primary }}
             thumbColor={colors.white}
-            value={true}
+            value={notificationsEnabled}
+            onValueChange={toggleNotifications}
           />
         </View>
         <View style={styles.row}>
@@ -35,7 +59,8 @@ export default function SettingsScreen() {
           <Switch
             trackColor={{ false: colors.border, true: colors.primary }}
             thumbColor={colors.white}
-            value={true}
+            value={locationEnabled}
+            onValueChange={toggleLocation}
           />
         </View>
       </View>

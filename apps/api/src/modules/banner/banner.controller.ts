@@ -15,6 +15,18 @@ export async function listActiveHandler(
   });
 }
 
+export async function getByIdHandler(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  const { id } = request.params;
+  const banner = await bannerService.getById(id);
+  if (!banner) {
+    return reply.status(404).send({ success: false, message: 'Banner not found' });
+  }
+  return reply.status(200).send({ success: true, data: banner });
+}
+
 export async function listAllHandler(
   request: FastifyRequest<{ Querystring: { page?: string; perPage?: string } }>,
   reply: FastifyReply,

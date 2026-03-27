@@ -11,6 +11,7 @@ import {
 } from './push.service.js';
 import { prisma } from '../../config/prisma.js';
 import { requireProContext } from '../../shared/pro-middleware.js';
+import { requireAdmin } from '../../shared/admin-middleware.js';
 
 export async function notificationRoutes(app: FastifyInstance) {
   // ============================================================
@@ -23,8 +24,12 @@ export async function notificationRoutes(app: FastifyInstance) {
     { preHandler: [authenticate] },
     async (request, reply) => {
       const { token, platform } = request.body as { token: string; platform: string };
-      if (!token) return reply.status(400).send({ success: false, message: 'Token is required' });
-      const result = await registerPushToken(request.user.userId, token, platform || 'ios');
+      if (!token || typeof token !== 'string' || token.trim().length < 10) {
+        return reply.status(400).send({ success: false, message: 'A valid push token is required' });
+      }
+      const validPlatforms = ['ios', 'android', 'web'];
+      const safePlatform = validPlatforms.includes(platform) ? platform : 'ios';
+      const result = await registerPushToken(request.user.userId, token.trim(), safePlatform);
       return reply.status(200).send({ success: true, data: result });
     },
   );
@@ -124,7 +129,7 @@ export async function notificationRoutes(app: FastifyInstance) {
   // Admin: Send broadcast notification to all clients
   app.post<{ Body: { title: string; body: string; countryId?: string; city?: string; state?: string } }>(
     '/admin/broadcast',
-    { preHandler: [authenticate] },
+    { preHandler: [authenticate, requireAdmin] },
     async (request, reply) => {
       const { title, body, countryId, city, state } = request.body as {
         title: string; body: string; countryId?: string; city?: string; state?: string;
@@ -198,7 +203,7 @@ export async function notificationRoutes(app: FastifyInstance) {
     Body: { title: string; body: string; target?: string; countryId?: string; sendInDays?: number };
   }>(
     '/admin/schedule',
-    { preHandler: [authenticate] },
+    { preHandler: [authenticate, requireAdmin] },
     async (request, reply) => {
       const { title, body, target, countryId, sendInDays } = request.body as {
         title: string;
@@ -241,7 +246,7 @@ export async function notificationRoutes(app: FastifyInstance) {
   // List scheduled notifications
   app.get(
     '/admin/scheduled',
-    { preHandler: [authenticate] },
+    { preHandler: [authenticate, requireAdmin] },
     async (_request, reply) => {
       const notifications = await prisma.scheduledNotification.findMany({
         orderBy: { createdAt: 'desc' },
@@ -254,7 +259,7 @@ export async function notificationRoutes(app: FastifyInstance) {
   // Cancel scheduled notification
   app.delete<{ Params: { id: string } }>(
     '/admin/scheduled/:id',
-    { preHandler: [authenticate] },
+    { preHandler: [authenticate, requireAdmin] },
     async (request, reply) => {
       await prisma.scheduledNotification.update({
         where: { id: request.params.id },
@@ -270,7 +275,7 @@ export async function notificationRoutes(app: FastifyInstance) {
 
   app.get<{ Querystring: { page?: string; status?: string } }>(
     '/admin/push-logs',
-    { preHandler: [authenticate] },
+    { preHandler: [authenticate, requireAdmin] },
     async (request, reply) => {
       const page = parseInt(request.query.page || '1', 10);
       const perPage = 50;
@@ -312,7 +317,7 @@ export async function notificationRoutes(app: FastifyInstance) {
   // ============================================================
 
   // Trigger booking reminders manually (admin/cron use)
-  app.post('/reminders/send', { preHandler: [authenticate] }, async (_request, reply) => {
+  app.post('/reminders/send', { preHandler: [authenticate, requireAdmin] }, async (_request, reply) => {
     const summary = await sendBookingReminders();
     return reply.status(200).send({ success: true, data: summary });
   });
@@ -330,7 +335,7 @@ export async function notificationRoutes(app: FastifyInstance) {
   );
 
   // Check notification configuration status
-  app.get('/status', { preHandler: [authenticate] }, async (_request, reply) => {
+  app.get('/status', { preHandler: [authenticate, requireAdmin] }, async (_request, reply) => {
     const { env } = await import('../../config/env.js');
     return reply.status(200).send({
       success: true,

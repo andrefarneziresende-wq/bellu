@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Star, Loader2, MessageSquare } from 'lucide-react';
+import { Star, Loader2, MessageSquare, Trash2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useTranslation } from '@/lib/i18n';
@@ -85,6 +85,17 @@ export default function ReviewsPage() {
     }
   };
 
+  const handleDeleteReview = async (id: string) => {
+    if (!window.confirm(t('proDashboard.reviews.deleteConfirm'))) return;
+    try {
+      await apiFetch(`/api/reviews/${id}`, { method: 'DELETE' });
+      toast.success(t('common.delete'));
+      fetchReviews();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('common.error'));
+    }
+  };
+
   const Stars = ({ rating }: { rating: number }) => (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map((n) => (
@@ -155,9 +166,14 @@ export default function ReviewsPage() {
                       )}
                     </div>
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(review.createdAt).toLocaleDateString(locale)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(review.createdAt).toLocaleDateString(locale)}
+                    </span>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteReview(review.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
 
                 {review.comment && <p className="mt-3 text-sm">{review.comment}</p>}

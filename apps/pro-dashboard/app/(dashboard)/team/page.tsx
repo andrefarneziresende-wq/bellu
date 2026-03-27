@@ -285,7 +285,7 @@ export default function TeamPage() {
             <div className="space-y-2"><Label>{t('proDashboard.team.specialties')}</Label><Input value={form.specialties} onChange={(e) => setForm((p) => ({ ...p, specialties: e.target.value }))} placeholder={t('proDashboard.team.specialties')} /></div>
             <div className="space-y-2">
               <Label>{t('proDashboard.team.commission')} (%)</Label>
-              <Input type="number" value={form.commissionPercent} onChange={(e) => { setForm((p) => ({ ...p, commissionPercent: e.target.value })); clearFieldError('commissionPercent'); }} placeholder="Ex: 40" className={fieldErrors.commissionPercent ? 'border-brand-error' : ''} />
+              <Input type="number" value={form.commissionPercent} onChange={(e) => { setForm((p) => ({ ...p, commissionPercent: e.target.value })); clearFieldError('commissionPercent'); }} placeholder={t('proDashboard.team.commissionPlaceholder')} className={fieldErrors.commissionPercent ? 'border-brand-error' : ''} />
               {fieldErrors.commissionPercent && <p className="text-xs text-brand-error">{fieldErrors.commissionPercent}</p>}
             </div>
           </form>

@@ -1,27 +1,27 @@
-import { View, Text, StyleSheet, Pressable, Linking, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Linking } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, radii, typography } from '../theme/colors';
+import { colors, spacing, radii } from '../theme/colors';
 
 export default function HelpScreen() {
   const { t } = useTranslation();
   const router = useRouter();
 
   const items = [
-    { icon: 'chatbubble-ellipses-outline' as const, label: t('help.faq'), onPress: () => Alert.alert(t('help.faq'), t('help.faqMessage', 'Consulte nossa central de ajuda para dúvidas frequentes.')) },
-    { icon: 'mail-outline' as const, label: t('help.contactEmail'), onPress: () => Linking.openURL('mailto:suporte@bellu.com') },
-    { icon: 'logo-whatsapp' as const, label: t('help.contactWhatsapp'), onPress: () => Linking.openURL('https://wa.me/5511999999999') },
+    { icon: 'chatbubble-ellipses-outline' as const, label: t('help.faq', 'Perguntas frequentes'), onPress: () => {} },
+    { icon: 'mail-outline' as const, label: t('help.contactEmail', 'Contato por e-mail'), onPress: () => Linking.openURL('mailto:suporte@bellu.com') },
+    { icon: 'logo-whatsapp' as const, label: t('help.contactWhatsapp', 'Contato por WhatsApp'), onPress: () => Linking.openURL('https://wa.me/5511999999999') },
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>{t('profile.helpSupport')}</Text>
+        <Text style={styles.headerTitle}>{t('profile.helpSupport', 'Ajuda e Suporte')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -30,7 +30,7 @@ export default function HelpScreen() {
           <Pressable key={i} style={styles.row} onPress={item.onPress}>
             <Ionicons name={item.icon} size={22} color={colors.text} />
             <Text style={styles.label}>{item.label}</Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </Pressable>
         ))}
       </View>
@@ -45,11 +45,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
   },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.white, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: typography.sizes.lg, fontWeight: typography.weights.bold, color: colors.text },
-  list: { backgroundColor: colors.white, marginHorizontal: spacing.lg, marginTop: spacing.lg, borderRadius: radii.xl, overflow: 'hidden' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  list: {
+    backgroundColor: colors.white, marginHorizontal: spacing.lg, marginTop: spacing.lg,
+    borderRadius: radii.xl, overflow: 'hidden',
+  },
   row: {
     flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.lg, paddingHorizontal: spacing.lg,
     borderBottomWidth: 1, borderBottomColor: colors.borderLight, gap: spacing.md,
   },
-  label: { flex: 1, fontSize: typography.sizes.md, color: colors.text },
+  label: { flex: 1, fontSize: 16, color: colors.text },
 });

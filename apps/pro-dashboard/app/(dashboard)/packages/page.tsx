@@ -541,7 +541,7 @@ export default function PackagesPage() {
               <Input
                 value={form.name}
                 onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                placeholder="Ex: Pacote Hidratação 5 sessões"
+                placeholder={t('proDashboard.packages.namePlaceholder')}
                 className={fieldErrors.name ? 'border-brand-error' : ''}
               />
               {fieldErrors.name && <p className="text-xs text-brand-error">{fieldErrors.name}</p>}
@@ -592,7 +592,7 @@ export default function PackagesPage() {
                   min="1"
                   value={form.intervalDays}
                   onChange={(e) => setForm((p) => ({ ...p, intervalDays: e.target.value }))}
-                  placeholder="dias"
+                  placeholder={t('proDashboard.packages.intervalDays')}
                 />
               </div>
               <div className="space-y-2">
