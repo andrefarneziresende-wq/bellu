@@ -16,7 +16,7 @@ const statusConfig: Record<string, { variant: 'success' | 'warning' | 'default' 
   pending: { variant: 'warning', key: 'booking.pending' },
   completed: { variant: 'default', key: 'booking.completed' },
   cancelled: { variant: 'error', key: 'booking.cancelled' },
-  no_show: { variant: 'error', key: 'booking.cancelled' },
+  no_show: { variant: 'error', key: 'booking.noShow' },
 };
 
 export default function BookingsScreen() {

@@ -30,6 +30,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithToken: (accessToken: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   setLoading: (loading: boolean) => void;
@@ -83,6 +84,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isAuthenticated: true, isLoading: false });
     } catch (error) {
       set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  loginWithToken: async (accessToken: string) => {
+    set({ isLoading: true, token: accessToken });
+    try {
+      await get().fetchProContext();
+      await get().fetchProfile();
+      set({ isAuthenticated: true, isLoading: false });
+    } catch (error) {
+      set({ isLoading: false, token: null });
       throw error;
     }
   },

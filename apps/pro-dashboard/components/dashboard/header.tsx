@@ -1,11 +1,15 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { LogOut, ChevronDown } from 'lucide-react';
+import { LogOut, ChevronDown, Menu } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useTranslation } from '@/lib/i18n';
 
-export function Header() {
+interface HeaderProps {
+  onMenuClick: () => void;
+}
+
+export function Header({ onMenuClick }: HeaderProps) {
   const { user, logout } = useAuth();
   const { t } = useTranslation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -25,7 +29,14 @@ export function Header() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-end border-b border-border bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:px-6">
+      <button
+        onClick={onMenuClick}
+        className="rounded-md p-2 text-muted-foreground hover:bg-muted lg:hidden"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+      <div className="hidden lg:block" />
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -34,7 +45,7 @@ export function Header() {
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-rose to-brand-rose-dark text-sm font-medium text-white">
             {initial}
           </div>
-          <div className="text-left">
+          <div className="hidden text-left sm:block">
             <p className="text-sm font-medium leading-none">{displayName}</p>
             <p className="text-xs text-muted-foreground">{t('proDashboard.header.role')}</p>
           </div>

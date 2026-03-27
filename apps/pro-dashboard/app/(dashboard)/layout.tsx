@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { Header } from '@/components/dashboard/header';
@@ -16,6 +16,7 @@ export default function DashboardLayout({
   const { user, loading } = useAuth();
   const router = useRouter();
   const { t } = useTranslation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -46,10 +47,17 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-brand-cream">
-      <Sidebar />
-      <div className="ml-64">
-        <Header />
-        <main className="p-6">{children}</main>
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="lg:ml-64">
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <main className="p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

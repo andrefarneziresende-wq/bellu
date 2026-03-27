@@ -18,6 +18,7 @@ import {
   Bell,
   Package,
   MessageSquare,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n';
@@ -26,8 +27,6 @@ import { LanguageSwitcher } from '@/components/ui/language-switcher';
 import { apiFetch } from '@/lib/api';
 import { wsManager } from '@/lib/websocket';
 
-// Each nav item maps to the permissions needed to see it
-// Empty array = always visible; '*' check handled by hasAnyPermission
 const navigation = [
   { key: 'dashboard', href: '/', icon: LayoutDashboard, permissions: [] },
   { key: 'agenda', href: '/agenda', icon: Calendar, permissions: ['agenda.view'] },
@@ -45,7 +44,12 @@ const navigation = [
   { key: 'settings', href: '/settings', icon: Settings, permissions: ['settings.view'] },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { t } = useTranslation();
   const { proContext, hasAnyPermission } = useAuth();
@@ -67,7 +71,6 @@ export function Sidebar() {
     fetchUnreadCounts();
     const interval = setInterval(fetchUnreadCounts, 30000);
 
-    // Listen to WebSocket for real-time badge updates
     const unsubMsg = wsManager.on('new_message', () => {
       fetchUnreadCounts();
     });
@@ -86,9 +89,8 @@ export function Sidebar() {
     };
   }, [fetchUnreadCounts]);
 
-  // Filter navigation items based on permissions
   const visibleNav = navigation.filter((item) => {
-    if (item.permissions.length === 0) return true; // Always visible
+    if (item.permissions.length === 0) return true;
     return hasAnyPermission(item.permissions);
   });
 
@@ -99,13 +101,26 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar">
-      {/* Logo */}
-      <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
-        <img src="/logo.png" alt="Bellu" className="h-8 w-auto" />
-        <span className="font-serif text-lg font-bold text-sidebar-foreground">
-          Pro
-        </span>
+    <aside
+      className={cn(
+        'fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200',
+        open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      )}
+    >
+      {/* Logo + close button */}
+      <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-6">
+        <div className="flex items-center gap-2">
+          <img src="/logo.png" alt="Bellu" className="h-8 w-auto" />
+          <span className="font-serif text-lg font-bold text-sidebar-foreground">
+            Pro
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          className="rounded-md p-1 text-sidebar-foreground hover:bg-muted lg:hidden"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Role badge */}
@@ -120,7 +135,7 @@ export function Sidebar() {
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {visibleNav.map((item) => {
           const isActive =
             item.href === '/'
@@ -131,6 +146,7 @@ export function Sidebar() {
             <Link
               key={item.key}
               href={item.href}
+              onClick={onClose}
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 isActive

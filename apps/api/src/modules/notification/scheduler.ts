@@ -86,7 +86,9 @@ async function sendPushReminders() {
 // ============================================================
 
 /**
- * Marks PENDING/CONFIRMED bookings whose date has passed as NO_SHOW.
+ * Auto-completes past bookings:
+ * - CONFIRMED → COMPLETED (client attended)
+ * - PENDING → NO_SHOW (client never confirmed/showed up)
  * Runs daily at midnight.
  */
 async function autoCompletePastBookings() {
@@ -94,18 +96,33 @@ async function autoCompletePastBookings() {
   yesterday.setDate(yesterday.getDate() - 1);
   yesterday.setHours(23, 59, 59, 999);
 
-  const result = await prisma.booking.updateMany({
+  // Confirmed bookings → mark as COMPLETED
+  const completed = await prisma.booking.updateMany({
     where: {
       date: { lt: yesterday },
-      status: { in: ['PENDING', 'CONFIRMED'] },
+      status: 'CONFIRMED',
+    },
+    data: {
+      status: 'COMPLETED',
+    },
+  });
+
+  // Pending bookings → mark as NO_SHOW
+  const noShow = await prisma.booking.updateMany({
+    where: {
+      date: { lt: yesterday },
+      status: 'PENDING',
     },
     data: {
       status: 'NO_SHOW',
     },
   });
 
-  if (result.count > 0) {
-    console.log(`[Scheduler] Auto-marked ${result.count} past booking(s) as NO_SHOW`);
+  if (completed.count > 0) {
+    console.log(`[Scheduler] Auto-completed ${completed.count} confirmed booking(s)`);
+  }
+  if (noShow.count > 0) {
+    console.log(`[Scheduler] Auto-marked ${noShow.count} pending booking(s) as NO_SHOW`);
   }
 }
 
