@@ -19,17 +19,17 @@ export async function notificationRoutes(app: FastifyInstance) {
   // ============================================================
 
   // Register push token (called on app login/startup)
-  app.post<{ Body: { token: string; platform: string } }>(
+  app.post<{ Body: { token: string; platform: string; bundleId?: string } }>(
     '/push-token',
     { preHandler: [authenticate] },
     async (request, reply) => {
-      const { token, platform } = request.body as { token: string; platform: string };
+      const { token, platform, bundleId } = request.body as { token: string; platform: string; bundleId?: string };
       if (!token || typeof token !== 'string' || token.trim().length < 10) {
         return reply.status(400).send({ success: false, message: 'A valid push token is required' });
       }
       const validPlatforms = ['ios', 'android', 'web'];
       const safePlatform = validPlatforms.includes(platform) ? platform : 'ios';
-      const result = await registerPushToken(request.user.userId, token.trim(), safePlatform);
+      const result = await registerPushToken(request.user.userId, token.trim(), safePlatform, bundleId);
       return reply.status(200).send({ success: true, data: result });
     },
   );

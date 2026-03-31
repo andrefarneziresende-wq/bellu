@@ -17,6 +17,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.beauty.glampro",
       "usesAppleSignIn": true,
+      "associatedDomains": [
+        "applinks:beautyapi-production.up.railway.app"
+      ],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -32,7 +35,15 @@
       "expo-router",
       "expo-localization",
       "expo-apple-authentication",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#FAF7F5",
+          "sounds": []
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

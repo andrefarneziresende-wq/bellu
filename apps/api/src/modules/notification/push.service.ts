@@ -49,6 +49,7 @@ function sendApnsMessage(
   body: string,
   badge?: number,
   data?: Record<string, string>,
+  bundleId?: string,
 ): Promise<PushResult> {
   return new Promise((resolve) => {
     const isProduction = env.NODE_ENV === 'production';
@@ -83,7 +84,7 @@ function sendApnsMessage(
       ':method': 'POST',
       ':path': `/3/device/${deviceToken}`,
       'authorization': `bearer ${jwt}`,
-      'apns-topic': env.APNS_BUNDLE_ID,
+      'apns-topic': bundleId || env.APNS_BUNDLE_ID,
       'apns-push-type': 'alert',
       'apns-priority': '10',
       ':scheme': 'https',
@@ -201,9 +202,10 @@ async function sendPushMessage(
   body: string,
   badge?: number,
   data?: Record<string, string>,
+  bundleId?: string,
 ): Promise<PushResult> {
   if (platform === 'ios') {
-    return sendApnsMessage(token, title, body, badge, data);
+    return sendApnsMessage(token, title, body, badge, data, bundleId);
   }
   // Android: use FCM
   return sendFcmMessage(token, title, body, data);
@@ -247,11 +249,11 @@ export interface PushNotificationPayload {
 /**
  * Register a push token for a user.
  */
-export async function registerPushToken(userId: string, token: string, platform: string) {
+export async function registerPushToken(userId: string, token: string, platform: string, bundleId?: string) {
   return prisma.pushToken.upsert({
     where: { userId_token: { userId, token } },
-    create: { userId, token, platform, active: true },
-    update: { active: true, platform },
+    create: { userId, token, platform, bundleId: bundleId || null, active: true },
+    update: { active: true, platform, bundleId: bundleId || undefined },
   });
 }
 
@@ -341,6 +343,7 @@ export async function sendPushToUser(userId: string, payload: PushNotificationPa
       payload.body,
       unreadCount,
       { type: payload.type, ...payload.data },
+      t.bundleId || undefined,
     );
 
     if (result.success) {
