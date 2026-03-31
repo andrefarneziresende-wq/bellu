@@ -9,8 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "postinstall": "node -e \"try{const p=require('path').resolve(__dirname,'../../node_modules/expo-modules-core/package.json');const f=require('fs');const j=JSON.parse(f.readFileSync(p,'utf8'));if(j.main.endsWith('.ts')){j.main='build/index.js';f.writeFileSync(p,JSON.stringify(j,null,2));console.log('Patched expo-modules-core main field')}}catch(e){}\""
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@beauty/shared-i18n": "*",

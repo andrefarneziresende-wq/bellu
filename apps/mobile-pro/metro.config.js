@@ -46,7 +46,14 @@ const react18 = findPackage('react', '18');
 const reactDom18 = findPackage('react-dom', '18');
 const reactNative = findPackage('react-native', '0');
 
-// Map shared @beauty packages + force react 18 for mobile
+// Force expo-modules-core to use local v1.x (root has v2.x with src/index.ts only)
+const localExpoModulesCore = path.resolve(projectRoot, 'node_modules', 'expo-modules-core');
+const hasLocalEMC = fs.existsSync(localExpoModulesCore);
+if (hasLocalEMC) {
+  console.log(`[Metro] Using local expo-modules-core at ${localExpoModulesCore}`);
+}
+
+// Map shared @beauty packages + force react 18 + force local expo-modules-core
 config.resolver.extraNodeModules = {
   '@beauty/shared-i18n': path.resolve(monorepoRoot, 'packages/shared-i18n'),
   '@beauty/shared-types': path.resolve(monorepoRoot, 'packages/shared-types'),
@@ -54,6 +61,7 @@ config.resolver.extraNodeModules = {
   ...(react18 && { 'react': react18 }),
   ...(reactDom18 && { 'react-dom': reactDom18 }),
   ...(reactNative && { 'react-native': reactNative }),
+  ...(hasLocalEMC && { 'expo-modules-core': localExpoModulesCore }),
 };
 
 // Block root's react if it's NOT react 18
@@ -74,6 +82,13 @@ function shouldBlockRoot(pkg) {
 
 shouldBlockRoot('react');
 shouldBlockRoot('react-dom');
+
+// Block root expo-modules-core (v2.x src/index.ts) — use local v1.x instead
+if (hasLocalEMC) {
+  const rootEMC = path.resolve(rootNM, 'expo-modules-core').replace(/[/\\]/g, '[/\\\\]');
+  blockPatterns.push(new RegExp('^' + rootEMC + '[/\\\\].*'));
+  console.log('[Metro] Blocking root expo-modules-core (using local)');
+}
 
 if (blockPatterns.length > 0) {
   config.resolver.blockList = blockPatterns;
