@@ -9,7 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postinstall": "node -e \"try{const p=require('path').resolve(__dirname,'../../node_modules/expo-modules-core/package.json');const f=require('fs');const j=JSON.parse(f.readFileSync(p,'utf8'));if(j.main.endsWith('.ts')){j.main='build/index.js';f.writeFileSync(p,JSON.stringify(j,null,2));console.log('Patched expo-modules-core main field')}}catch(e){}\""
   },
   "dependencies": {
     "@beauty/shared-i18n": "*",
@@ -26,6 +27,7 @@
     "expo-image": "~2.0.0",
     "expo-image-picker": "~16.0.6",
     "expo-localization": "~16.0.0",
+    "expo-modules-core": "^1.12.26",
     "expo-notifications": "^0.29.14",
     "expo-router": "~4.0.0",
     "expo-status-bar": "~2.0.0",
