@@ -153,6 +153,12 @@ export default function DashboardScreen() {
             </View>
             <Text style={styles.quickText}>{t('proDashboard.packages.title')}</Text>
           </Pressable>
+          <Pressable style={styles.quickAction} onPress={() => router.push('/session-groups')}>
+            <View style={[styles.quickIcon, { backgroundColor: '#D4A57420' }]}>
+              <Ionicons name="layers-outline" size={22} color={colors.accent} />
+            </View>
+            <Text style={styles.quickText}>Sessões</Text>
+          </Pressable>
         </Animated.View>
 
         {/* Today's Bookings */}

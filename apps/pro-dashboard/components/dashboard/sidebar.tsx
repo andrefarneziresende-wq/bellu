@@ -18,6 +18,7 @@ import {
   Bell,
   Package,
   MessageSquare,
+  Layers,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,7 @@ import { wsManager } from '@/lib/websocket';
 const navigation = [
   { key: 'dashboard', href: '/', icon: LayoutDashboard, permissions: [] },
   { key: 'agenda', href: '/agenda', icon: Calendar, permissions: ['agenda.view'] },
+  { key: 'sessionGroups', href: '/session-groups', icon: Layers, permissions: ['agenda.view'] },
   { key: 'clients', href: '/clients', icon: Users, permissions: ['clients.view'] },
   { key: 'services', href: '/services', icon: Scissors, permissions: ['services.view'] },
   { key: 'packages', href: '/packages', icon: Package, permissions: ['services.view'] },

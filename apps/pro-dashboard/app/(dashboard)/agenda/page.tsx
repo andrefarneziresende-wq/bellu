@@ -23,6 +23,8 @@ import {
   UserPlus,
   Check,
   X,
+  Layers,
+  Trash2,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
@@ -163,6 +165,21 @@ export default function AgendaPage() {
 
   const statusLabels = (status: string) => t(statusLabelKeys[status] || 'booking.pending');
 
+  // Session Group state
+  const [sessionGroupOpen, setSessionGroupOpen] = useState(false);
+  const [sgServiceType, setSgServiceType] = useState<'catalog' | 'custom'>('catalog');
+  const [sgForm, setSgForm] = useState({
+    serviceId: '',
+    customServiceName: '',
+    totalSessions: 2,
+    priceType: 'PER_SESSION' as 'PER_SESSION' | 'CUSTOM_TOTAL',
+    sessionPrice: '',
+    totalPrice: '',
+    notes: '',
+  });
+  const [sgSessions, setSgSessions] = useState<{ date: string; startTime: string; notes: string; skip: boolean }[]>([]);
+  const [sgSubmitting, setSgSubmitting] = useState(false);
+
   const [form, setForm] = useState({
     clientName: '',
     clientPhone: '',
@@ -268,6 +285,89 @@ export default function AgendaPage() {
     setNewClientForm({ name: '', phone: '', email: '' });
     setFieldErrors({});
     setCreateOpen(true);
+  };
+
+  const openSessionGroup = () => {
+    setSgServiceType('catalog');
+    setSgForm({
+      serviceId: '',
+      customServiceName: '',
+      totalSessions: 2,
+      priceType: 'PER_SESSION',
+      sessionPrice: '',
+      totalPrice: '',
+      notes: '',
+    });
+    setSgSessions([
+      { date: '', startTime: '', notes: '', skip: false },
+      { date: '', startTime: '', notes: '', skip: false },
+    ]);
+    setSelectedClient(null);
+    setClientSearch('');
+    setShowClientDropdown(false);
+    setNewClientMode(false);
+    setNewClientForm({ name: '', phone: '', email: '' });
+    setFieldErrors({});
+    setSessionGroupOpen(true);
+  };
+
+  const updateSgSessionCount = (count: number) => {
+    const clamped = Math.max(2, Math.min(50, count));
+    setSgForm((p) => ({ ...p, totalSessions: clamped }));
+    setSgSessions((prev) => {
+      if (clamped > prev.length) {
+        return [...prev, ...Array.from({ length: clamped - prev.length }, () => ({ date: '', startTime: '', notes: '', skip: false }))];
+      }
+      return prev.slice(0, clamped);
+    });
+  };
+
+  const handleCreateSessionGroup = async () => {
+    const errors: BookingFieldErrors = {};
+    if (!selectedClient && !form.clientName.trim()) errors.client = t('validation.required');
+    if (sgServiceType === 'catalog' && !sgForm.serviceId) errors.serviceId = t('validation.required');
+    if (sgServiceType === 'custom' && !sgForm.customServiceName.trim()) errors.serviceId = t('validation.required');
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    const sessions = sgSessions.map((s) => {
+      if (s.skip || !s.date || !s.startTime) return { notes: s.notes || undefined };
+      return { date: s.date, startTime: s.startTime, notes: s.notes || undefined };
+    });
+
+    const svc = services.find((s) => s.id === sgForm.serviceId);
+    const sessionPrice = sgForm.priceType === 'PER_SESSION'
+      ? (sgServiceType === 'catalog' ? Number(svc?.price) || 0 : Number(sgForm.sessionPrice) || 0)
+      : undefined;
+    const totalPrice = sgForm.priceType === 'CUSTOM_TOTAL' ? Number(sgForm.totalPrice) || 0 : undefined;
+
+    setSgSubmitting(true);
+    try {
+      await apiFetch('/api/session-groups', {
+        method: 'POST',
+        body: JSON.stringify({
+          serviceId: sgServiceType === 'catalog' ? sgForm.serviceId : undefined,
+          customServiceName: sgServiceType === 'custom' ? sgForm.customServiceName : undefined,
+          clientName: selectedClient?.name || form.clientName,
+          clientPhone: selectedClient?.phone || form.clientPhone,
+          userId: selectedClient?.id,
+          totalSessions: sgForm.totalSessions,
+          priceType: sgForm.priceType,
+          sessionPrice,
+          totalPrice,
+          currency: svc?.currency || 'BRL',
+          notes: sgForm.notes || undefined,
+          sessions,
+        }),
+      });
+      toast.success(t('proDashboard.agenda.groupCreated'));
+      setSessionGroupOpen(false);
+      fetchBookings();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('errors.generic'));
+    } finally {
+      setSgSubmitting(false);
+    }
   };
 
   const selectClient = (client: Client) => {
@@ -782,10 +882,18 @@ export default function AgendaPage() {
           <h1 className="font-serif text-2xl font-bold">{t('proDashboard.agenda.title')}</h1>
           <p className="text-sm text-muted-foreground capitalize">{dayLabel}</p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t('proDashboard.agenda.newBooking')}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={openSessionGroup}>
+            <Layers className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">{t('proDashboard.agenda.newSessionGroup')}</span>
+            <span className="sm:hidden">{t('proDashboard.agenda.session')}</span>
+          </Button>
+          <Button onClick={openCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">{t('proDashboard.agenda.newBooking')}</span>
+            <span className="sm:hidden">+</span>
+          </Button>
+        </div>
       </div>
 
       {/* Navigation + View Toggle */}
@@ -1121,6 +1229,284 @@ export default function AgendaPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Session Group Dialog */}
+      <Dialog open={sessionGroupOpen} onOpenChange={setSessionGroupOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Layers className="h-5 w-5 text-brand-rose" />
+              {t('proDashboard.agenda.sessionGroup')}
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">{t('proDashboard.agenda.sessionGroupDesc')}</p>
+          </DialogHeader>
+          <div className="space-y-5 py-4">
+            {/* Client selector (reuse same pattern) */}
+            <div className="space-y-2">
+              <Label>{t('proDashboard.agenda.client')} *</Label>
+              {fieldErrors.client && !selectedClient && !newClientMode && <p className="text-xs text-brand-error">{fieldErrors.client}</p>}
+              {selectedClient ? (
+                <div className="flex items-center justify-between rounded-xl border border-input bg-background px-3 py-2">
+                  <div>
+                    <p className="text-sm font-medium">{selectedClient.name}</p>
+                    {selectedClient.phone && <p className="text-xs text-muted-foreground">{selectedClient.phone}</p>}
+                  </div>
+                  <button onClick={clearClient} className="rounded-full p-1 hover:bg-muted">
+                    <X className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </div>
+              ) : newClientMode ? (
+                <div className="space-y-3 rounded-xl border border-input p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{t('proDashboard.agenda.newClient')}</span>
+                    <button onClick={() => setNewClientMode(false)} className="rounded-full p-1 hover:bg-muted">
+                      <X className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </div>
+                  <Input
+                    value={newClientForm.name}
+                    onChange={(e) => { setNewClientForm((p) => ({ ...p, name: e.target.value })); clearFieldError('newClientName'); }}
+                    placeholder={t('proDashboard.agenda.namePlaceholder')}
+                    autoFocus
+                    className={fieldErrors.newClientName ? 'border-brand-error' : ''}
+                  />
+                  {fieldErrors.newClientName && <p className="text-xs text-brand-error mt-1">{fieldErrors.newClientName}</p>}
+                  <PhoneMaskedInput
+                    value={newClientForm.phone}
+                    onChange={(v) => { setNewClientForm((p) => ({ ...p, phone: v })); clearFieldError('newClientPhone'); }}
+                    placeholder={t('proDashboard.agenda.phonePlaceholder')}
+                    error={!!fieldErrors.newClientPhone}
+                  />
+                  {fieldErrors.newClientPhone && <p className="text-xs text-brand-error mt-1">{fieldErrors.newClientPhone}</p>}
+                  <Input
+                    value={newClientForm.email}
+                    onChange={(e) => { setNewClientForm((p) => ({ ...p, email: e.target.value })); clearFieldError('newClientEmail'); }}
+                    placeholder="Email"
+                    className={fieldErrors.newClientEmail ? 'border-brand-error' : ''}
+                  />
+                  {fieldErrors.newClientEmail && <p className="text-xs text-brand-error mt-1">{fieldErrors.newClientEmail}</p>}
+                  <Button size="sm" onClick={handleSaveNewClient} disabled={savingClient} className="w-full">
+                    {savingClient ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                    {t('proDashboard.agenda.registerAndSelect')}
+                  </Button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={clientSearch}
+                      onChange={(e) => { setClientSearch(e.target.value); setShowClientDropdown(true); }}
+                      onFocus={() => setShowClientDropdown(true)}
+                      placeholder={t('proDashboard.agenda.searchClient')}
+                      className="pl-9"
+                    />
+                  </div>
+                  {showClientDropdown && (
+                    <div className="absolute z-50 mt-1 max-h-40 w-full overflow-y-auto rounded-xl border bg-popover shadow-md">
+                      <button
+                        onClick={() => { setShowClientDropdown(false); setNewClientMode(true); }}
+                        className="flex w-full items-center gap-2 border-b px-3 py-2.5 text-sm text-brand-rose hover:bg-muted transition-colors"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                        {t('proDashboard.agenda.newClient')}
+                      </button>
+                      {filteredClients.length === 0 ? (
+                        <div className="px-3 py-4 text-center text-sm text-muted-foreground">{t('common.noResults')}</div>
+                      ) : (
+                        filteredClients.slice(0, 15).map((c) => (
+                          <button key={c.id} onClick={() => selectClient(c)} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted transition-colors">
+                            <div>
+                              <p className="font-medium">{c.name}</p>
+                              <p className="text-xs text-muted-foreground">{[c.phone, c.email].filter(Boolean).join(' • ') || t('proDashboard.clients.noContact')}</p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Service type toggle */}
+            <div className="space-y-2">
+              <Label>{t('proDashboard.agenda.serviceType')}</Label>
+              <div className="flex rounded-lg border border-border overflow-hidden">
+                <button
+                  onClick={() => setSgServiceType('catalog')}
+                  className={`flex-1 px-3 py-2 text-sm transition-colors ${sgServiceType === 'catalog' ? 'bg-brand-rose text-white' : 'hover:bg-muted'}`}
+                >
+                  {t('proDashboard.agenda.fromCatalog')}
+                </button>
+                <button
+                  onClick={() => setSgServiceType('custom')}
+                  className={`flex-1 px-3 py-2 text-sm transition-colors ${sgServiceType === 'custom' ? 'bg-brand-rose text-white' : 'hover:bg-muted'}`}
+                >
+                  {t('proDashboard.agenda.customService')}
+                </button>
+              </div>
+            </div>
+
+            {/* Service selection or custom service */}
+            {sgServiceType === 'catalog' ? (
+              <div className="space-y-2">
+                <Label>{t('proDashboard.agenda.service')} *</Label>
+                <Select value={sgForm.serviceId} onValueChange={(v) => { setSgForm((p) => ({ ...p, serviceId: v })); clearFieldError('serviceId'); }}>
+                  <SelectTrigger className={fieldErrors.serviceId ? 'border-brand-error' : ''}><SelectValue placeholder={t('proDashboard.agenda.selectService')} /></SelectTrigger>
+                  <SelectContent>
+                    {services.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name} — R$ {s.price}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {fieldErrors.serviceId && <p className="text-xs text-brand-error">{fieldErrors.serviceId}</p>}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t('proDashboard.agenda.customServiceName')} *</Label>
+                  <Input
+                    value={sgForm.customServiceName}
+                    onChange={(e) => { setSgForm((p) => ({ ...p, customServiceName: e.target.value })); clearFieldError('serviceId'); }}
+                    placeholder={t('proDashboard.agenda.customServiceName')}
+                    className={fieldErrors.serviceId ? 'border-brand-error' : ''}
+                  />
+                  {fieldErrors.serviceId && <p className="text-xs text-brand-error">{fieldErrors.serviceId}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('proDashboard.agenda.customServicePrice')}</Label>
+                  <Input
+                    type="number"
+                    value={sgForm.sessionPrice}
+                    onChange={(e) => setSgForm((p) => ({ ...p, sessionPrice: e.target.value }))}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Number of sessions + Price type */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('proDashboard.agenda.totalSessions')}</Label>
+                <Input
+                  type="number"
+                  min={2}
+                  max={50}
+                  value={sgForm.totalSessions}
+                  onChange={(e) => updateSgSessionCount(Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('proDashboard.agenda.priceType')}</Label>
+                <Select value={sgForm.priceType} onValueChange={(v) => setSgForm((p) => ({ ...p, priceType: v as 'PER_SESSION' | 'CUSTOM_TOTAL' }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PER_SESSION">{t('proDashboard.agenda.perSession')}</SelectItem>
+                    <SelectItem value="CUSTOM_TOTAL">{t('proDashboard.agenda.customTotal')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Price fields depending on type */}
+            {sgForm.priceType === 'CUSTOM_TOTAL' && (
+              <div className="space-y-2">
+                <Label>{t('proDashboard.agenda.totalPrice')}</Label>
+                <Input
+                  type="number"
+                  value={sgForm.totalPrice}
+                  onChange={(e) => setSgForm((p) => ({ ...p, totalPrice: e.target.value }))}
+                  placeholder="0.00"
+                />
+              </div>
+            )}
+            {sgForm.priceType === 'PER_SESSION' && sgServiceType === 'catalog' && sgForm.serviceId && (
+              <div className="rounded-lg bg-brand-rose/5 p-3 text-sm">
+                <span className="text-muted-foreground">{t('proDashboard.agenda.sessionPrice')}:</span>{' '}
+                <span className="font-semibold">R$ {Number(services.find((s) => s.id === sgForm.serviceId)?.price || 0).toFixed(2)}</span>
+                <span className="text-muted-foreground"> × {sgForm.totalSessions} = </span>
+                <span className="font-bold">R$ {(Number(services.find((s) => s.id === sgForm.serviceId)?.price || 0) * sgForm.totalSessions).toFixed(2)}</span>
+              </div>
+            )}
+
+            {/* Sessions list */}
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">{t('proDashboard.agenda.session')}s</Label>
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                {sgSessions.map((session, idx) => (
+                  <div key={idx} className={`rounded-xl border p-3 space-y-2 transition-colors ${session.skip ? 'bg-muted/50 opacity-60' : 'bg-background'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{t('proDashboard.agenda.session')} {idx + 1}</span>
+                      <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={session.skip}
+                          onChange={(e) => {
+                            const updated = [...sgSessions];
+                            updated[idx] = { ...updated[idx], skip: e.target.checked, date: '', startTime: '' };
+                            setSgSessions(updated);
+                          }}
+                          className="rounded"
+                        />
+                        {t('proDashboard.agenda.scheduleLater')}
+                      </label>
+                    </div>
+                    {!session.skip && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <DatePicker
+                          value={session.date}
+                          onChange={(v) => {
+                            const updated = [...sgSessions];
+                            updated[idx] = { ...updated[idx], date: v };
+                            setSgSessions(updated);
+                          }}
+                          minDate={new Date()}
+                          locale={locale}
+                          placeholder={t('proDashboard.agenda.sessionDate')}
+                        />
+                        <TimePicker
+                          value={session.startTime}
+                          onChange={(v) => {
+                            const updated = [...sgSessions];
+                            updated[idx] = { ...updated[idx], startTime: v };
+                            setSgSessions(updated);
+                          }}
+                          placeholder={t('proDashboard.agenda.sessionTime')}
+                        />
+                      </div>
+                    )}
+                    <Input
+                      value={session.notes}
+                      onChange={(e) => {
+                        const updated = [...sgSessions];
+                        updated[idx] = { ...updated[idx], notes: e.target.value };
+                        setSgSessions(updated);
+                      }}
+                      placeholder={t('proDashboard.agenda.sessionNotes')}
+                      className="text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* General notes */}
+            <div className="space-y-2">
+              <Label>{t('proDashboard.agenda.notes')}</Label>
+              <Textarea value={sgForm.notes} onChange={(e) => setSgForm((p) => ({ ...p, notes: e.target.value }))} placeholder={t('proDashboard.agenda.notes')} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSessionGroupOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleCreateSessionGroup} disabled={sgSubmitting}>
+              {sgSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t('common.confirm')}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

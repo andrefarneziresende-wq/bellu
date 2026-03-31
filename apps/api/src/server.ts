@@ -14,6 +14,7 @@ import { userRoutes } from './modules/user/user.routes.js';
 import { professionalRoutes } from './modules/professional/professional.routes.js';
 import { serviceRoutes } from './modules/service/service.routes.js';
 import { bookingRoutes } from './modules/booking/booking.routes.js';
+import { sessionGroupRoutes } from './modules/session-group/session-group.routes.js';
 import { reviewRoutes } from './modules/review/review.routes.js';
 import { categoryRoutes } from './modules/category/category.routes.js';
 import { paymentRoutes } from './modules/payment/payment.routes.js';
@@ -100,6 +101,7 @@ async function bootstrap() {
   await app.register(professionalRoutes, { prefix: '/api/professionals' });
   await app.register(serviceRoutes, { prefix: '/api/services' });
   await app.register(bookingRoutes, { prefix: '/api/bookings' });
+  await app.register(sessionGroupRoutes, { prefix: '/api/session-groups' });
   await app.register(reviewRoutes, { prefix: '/api/reviews' });
   await app.register(categoryRoutes, { prefix: '/api/categories' });
   await app.register(paymentRoutes, { prefix: '/api/payments' });
